@@ -1,0 +1,28 @@
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./img:/app/img
+      - ./data:/app/data
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./dist
+          target: /app
+        - path: ./public/pixel-test.html
+          action: sync
+          target: /app/public/pixel-test.html
+        #- path: ./
+        #  action: sync+restart
+        #  target: /app
+        #  ignore:
+        #    - node_modules/
+        #    - ui/
+         # rebuild
+      # - path: package.json
+      #   action: rebuild
+       # - path: ./DockerFile
+       #   action: rebuild

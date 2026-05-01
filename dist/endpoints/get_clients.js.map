@@ -1,0 +1,1 @@
+{"version":3,"file":"get_clients.js","sourceRoot":"","sources":["../../src/endpoints/get_clients.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,IAAI,EAAE,MAAM,kBAAkB,CAAC;AAGxC,MAAM,UAAU,UAAU,CAAC,GAAY,EAAE,GAAa;IAClD,GAAG,CAAC,IAAI,CAAC,IAAI,CAAC,OAAO,CAAC,CAAC;AAC3B,CAAC;AAAA,CAAC"}

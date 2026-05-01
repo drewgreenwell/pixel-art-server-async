@@ -4,6 +4,21 @@ This is simple server to supply images to [a matching WLED usermod](https://gith
 ![screen](/screenshots/screen-large.jpg)
 ![admin interface](/screenshots/admin.png)
 
+## Project status
+This project is currently a work in progress to improve and add features to the original project. It is in active use and working well but some features are still being planned and developed.
+
+Current progress (May 2026):
+- TypeScript server is in place with build/start scripts (`npm run build`, `npm run start`).
+- Core image and playlist endpoints are implemented under `src/endpoints`.
+- Pixel/image processing utilities are implemented under `src/utils`.
+- A Svelte-based UI exists in `ui/` and is actively being iterated.
+- Docker-related files are present for containerized deployment (`Dockerfile`, `docker-compose.yaml`).
+
+Repository media policy:
+- All images in `img/` are intentionally ignored by default.
+- Only `img/sample.gif` is allowed to be included in git for sample/demo use.
+
+
 ## Hardware requirements
 The hardware consists of 3 parts:
 
@@ -32,6 +47,7 @@ To generate a clean matrix with square pixels, you need a diffuser screen. [This
 ## setup
  - install [node.js](https://nodejs.org/)
  - install `yarn` with `npm install -g yarn`
+ - copy `.env.example` to `.env` and update values for your environment
  - with nodejs installed, run `yarn` from within the server directory to install all dependencies
  - from within the same dir run `node ./server.js` to start the server. Use the `--port xxxx` switch to choose a port to run it on. The admin interface should be available at this url. 
  - if you wish to run the server at system startup, I recommend installing [pm2](https://github.com/Unitech/pm2), the node process manager. You can then add the server process to pm2 with the command `pm2 start server.js -- --port xxxx"` and `pm2 save` to save the config. YOu then just need pm2 to [run on startup](https://pm2.keymetrics.io/docs/usage/startup/)

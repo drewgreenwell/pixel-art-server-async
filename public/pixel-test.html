@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.0.1/css/bootstrap.min.css">
+	<style>
+		:root {
+			--active-palette-id: -1;
+		}
+
+		.pixel-grid .frame {
+			display: none;
+		}
+
+		.pixel-grid .frame.active {
+			display: grid;
+			grid-template-columns: repeat(32, 1fr);
+			grid-template-rows: repeat(32, 1fr);
+			gap: 0;
+			margin: auto;
+		}
+
+		.pixel {
+			border: 1px solid #ccc;
+		}
+
+		.controls .palette {
+			display: flex;
+			flex-direction: column;
+		}
+
+		.controls .palette>.palette-item {
+			border: 1px solid #ccc;
+			min-height: 32px;
+			cursor: pointer;
+		}
+
+		.controls .palette>.palette-item:hover {
+			border: 1px solid yellow;
+		}
+	</style>
+	<title>Pixel Display Test</title>
+</head>
+
+<body>
+
+	<div class="container">
+		<h1>pixel art test</h1>
+		<p>Press the button below to start the color test </p>
+		<div class="global-controls row">
+			<div class="test-options col-3">
+				<button id="startTest" class="btn btn-primary">start</button>
+			</div>
+			<div class="frames col-9">
+			</div>
+		</div>
+		<div class="row">
+			<div class="pixel-grid col-9"></div>
+			<div class="controls col-3"></div>
+		</div>
+	</div>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js" crossorigin="anonymous"></script>
+
+
+	<script>
+
+		$(document).ready(function () {
+			let activeImage = null;
+			let $grid = $(".pixel-grid");
+			let $ctrls = $(".controls");
+			$("#startTest").click(function () {
+				fetch("http://192.168.1.35:8080/api/image/pixels?id=OfficeMatrix&screen_id=OfficeMatrix&key=drewg-key&width=32&height=32&paletteLength=256")
+					.then((r) => r.json())
+					.then((d) => {
+						console.log(d);
+						activeImage = d;
+						renderActiveImage();
+
+					});
+				$ctrls.on("click", ".palette-item", (e) => {
+					let $ele = $(e.currentTarget);
+					let active = $ele.is(".active");
+					if (active) {
+						setActivePaletteId(null);
+					} else {
+						console.log({ paletteId: $ele.attr("data-palette-id"), e, ele: $ele });
+						let id = parseInt($ele.attr("data-palette-id"));
+						setActivePaletteId(id);
+					}
+
+				});
+				function setActivePaletteId(id) {
+					console.log({ paletteId: id });
+					$ctrls.find(".palette-item.active").removeClass("active");
+					if (id === null) {
+						$grid.removeAttr("data-palette-id");
+						$ctrls.removeAttr("data-palette-id");
+						return;
+					}
+					$grid.attr("data-active-palette-id", id);
+					$ctrls.attr("data-active-palette-id", id);
+				}
+				function renderActiveImage() {
+					const d = activeImage;
+					$grid.html('');
+					$ctrls.html('');
+					// generate palette css
+					let $css = $('<style>');
+					let $palette = $('<div class="palette"></div>');
+					let paletteCss = '';
+					let paletteHtml = ''
+					for (let i = 0; i < d.palette.length; i++) {
+						let hex = '#' + d.palette[i];
+						let p = `[data-palette-id="${i}"]`;
+						let a = `[data-active-palette-id="${i}"]`;
+						paletteCss += `${p}{ background-color:${hex}; } .pixel-grid${a} ${p},.controls${a} ${p}{ border: 1px solid red; }`;
+						paletteHtml += `<div class="palette-item" data-palette-id="${i}">${hex}</div>`
+					}
+					$css.html(paletteCss);
+					$grid.append($css);
+					$palette.html(paletteHtml);
+					$ctrls.append($palette);
+					const frames = Object.groupBy(d.rows, (row) => {
+						return 'f' + row.frame;
+					});
+					for (let f = 0; f < Object.keys(frames).length; f++) {
+						let $frame = $(`<div class="frame${f == 0 ? ' active' : ''}" data-frame="${f}">`);
+						let count = 1;
+						let html = '';
+						for (let y = 0; y < d.meta.height; y++) {
+							for (let x = 0; x < d.meta.width; x++) {
+								let paletteIdx = d.rows[y].pixels[x];
+								//
+								html += `<div class="pixel" data-pixel="count" data-palette-id="${paletteIdx}">&nbsp;</div>`;
+								count++;
+							}
+							$frame.html(html);
+							$grid.append($frame);
+						}
+					}
+				}
+			});
+		});
+	</script>
+
+</body>
+
+</html>

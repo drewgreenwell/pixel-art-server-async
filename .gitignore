@@ -1,7 +1,7 @@
 node_modules
-img/**/*.png
-img/**/*.jpg
-img/**/*.gif
-!img/sample.png
+.env
+!.env.example
+img/**
+!img/sample.gif
 .history
 data/*.json
