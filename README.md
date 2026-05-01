@@ -14,6 +14,16 @@ Current progress (May 2026):
 - A Svelte-based UI exists in `ui/` and is actively being iterated.
 - Docker-related files are present for containerized deployment (`Dockerfile`, `docker-compose.yaml`).
 
+## Differences from the original project
+This fork is focused on running the server as both a playlist/image source and a more direct WLED tooling workflow.
+
+- Direct WLED DDP output support has been added, so images can be pushed straight to a configured WLED device instead of only being served for client polling.
+- The server now includes WLED-specific runtime configuration for host, port, LED count, and update interval using environment variables.
+- The UI includes WLED-oriented actions such as showing the active image on a WLED target and importing WLED JSON directly into the editor.
+- The codebase has been migrated into a TypeScript-first server under `src/` with compiled output in `dist/`.
+- A separate Svelte UI project lives under `ui/`, making the admin interface easier to iterate on than the original bundled approach.
+- Docker support has been added for easier local deployment and testing.
+
 Repository media policy:
 - All images in `img/` are intentionally ignored by default.
 - Only `img/sample.gif` is allowed to be included in git for sample/demo use.
