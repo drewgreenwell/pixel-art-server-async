@@ -34,6 +34,7 @@
     faArrowDown,
     faTrashCan,
     faArrowTurnUp,
+    faEye,
   } from '@fortawesome/free-solid-svg-icons';
 
   import Modal from './Modal.svelte';
@@ -1117,7 +1118,7 @@
           }}
           class="button small tool"
         >
-          WLED SHOW
+          <Fa icon={faEye} />
         </button>
       </div>
 
