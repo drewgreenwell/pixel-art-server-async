@@ -4,6 +4,44 @@ import { getAllImageStats, returnAnImageStat, returnAnImageStatFromBuffer } from
 import { getImgPixelsBuffer } from './get_pixel_buffer.js';
 import quantize, { RgbPixel } from 'quantize';
 
+let fallbackShuffleBag: string[] = [];
+let fallbackShuffleSourceKey = '';
+let fallbackLastPath: string | null = null;
+
+function refillFallbackShuffleBag(imageIds: string[]): void {
+    fallbackShuffleBag = _.shuffle(imageIds);
+    if (fallbackLastPath && fallbackShuffleBag.length > 1 && fallbackShuffleBag[0] === fallbackLastPath) {
+        const first = fallbackShuffleBag.shift();
+        if (first) {
+            fallbackShuffleBag.push(first);
+        }
+    }
+}
+
+function getNextFallbackImagePath(imageStats: { id: string }[]): string | null {
+    const imageIds = imageStats.map((s) => s.id).filter((id) => !!id);
+    if (!imageIds.length) {
+        return null;
+    }
+
+    const sourceKey = imageIds.slice().sort().join('|');
+    if (sourceKey !== fallbackShuffleSourceKey || fallbackShuffleBag.length === 0) {
+        fallbackShuffleSourceKey = sourceKey;
+        refillFallbackShuffleBag(imageIds);
+    }
+
+    let next = fallbackShuffleBag.shift() || null;
+    if (!next) {
+        refillFallbackShuffleBag(imageIds);
+        next = fallbackShuffleBag.shift() || null;
+    }
+
+    if (next) {
+        fallbackLastPath = next;
+    }
+    return next;
+}
+
 
 export async function getImageData(client: PixelArtClient, paletteLength: number = 512, useHexPalette: boolean = true, image_path: string | null = null, imgData: Buffer | null = null): Promise<ImageDataResponse> {
     let imageset = _.find(Data.playlists, (p) => p.id == client.imagesetId);
@@ -28,7 +66,7 @@ export async function getImageData(client: PixelArtClient, paletteLength: number
     } else if (imgData) {
         path = 'temp.gif';
     }
-    var path = reqPath || images?.[index] || imageStats?.[_.random(imageStats.length - 1)].id;
+    var path = reqPath || images?.[index] || getNextFallbackImagePath(imageStats);
     if (!path) {
         return { success: false, msg: JSON.stringify({ warning: 'no playlist and no backup image' }) };
     }

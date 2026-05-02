@@ -1,6 +1,8 @@
 <script lang="ts">
   const serverUrl = 'http://192.168.1.35:8080';
   import toast, { Toaster } from 'svelte-5-french-toast';
+  import Fa from 'svelte-fa';
+  import { faPlay, faStop, faSun } from '@fortawesome/free-solid-svg-icons';
   import svelteLogo from './assets/svelte.svg';
   import viteLogo from '/vite.svg';
   import Counter from './lib/Counter.svelte';
@@ -73,7 +75,7 @@
       }}
       class="button small tool"
     >
-      WLED START
+      <Fa icon={faPlay} />
     </button>
     <button
       aria-label="Delete Image"
@@ -82,7 +84,7 @@
       }}
       class="button small tool"
     >
-      WLED STOP
+      <Fa icon={faStop} />
     </button>
 
     <input type="range" min="0" max="255" bind:value={brightness} />
@@ -93,7 +95,7 @@
       }}
       class="button small tool"
     >
-      WLED BRI
+      <Fa icon={faSun} />
     </button>
   </div>
   <nav>

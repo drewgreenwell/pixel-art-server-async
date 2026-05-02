@@ -3,6 +3,38 @@ import { Data } from './data.js';
 import { getAllImageStats, returnAnImageStatFromBuffer } from './get_image_stat.js';
 import { getImgPixelsBuffer } from './get_pixel_buffer.js';
 import quantize from 'quantize';
+let fallbackShuffleBag = [];
+let fallbackShuffleSourceKey = '';
+let fallbackLastPath = null;
+function refillFallbackShuffleBag(imageIds) {
+    fallbackShuffleBag = _.shuffle(imageIds);
+    if (fallbackLastPath && fallbackShuffleBag.length > 1 && fallbackShuffleBag[0] === fallbackLastPath) {
+        const first = fallbackShuffleBag.shift();
+        if (first) {
+            fallbackShuffleBag.push(first);
+        }
+    }
+}
+function getNextFallbackImagePath(imageStats) {
+    const imageIds = imageStats.map((s) => s.id).filter((id) => !!id);
+    if (!imageIds.length) {
+        return null;
+    }
+    const sourceKey = imageIds.slice().sort().join('|');
+    if (sourceKey !== fallbackShuffleSourceKey || fallbackShuffleBag.length === 0) {
+        fallbackShuffleSourceKey = sourceKey;
+        refillFallbackShuffleBag(imageIds);
+    }
+    let next = fallbackShuffleBag.shift() || null;
+    if (!next) {
+        refillFallbackShuffleBag(imageIds);
+        next = fallbackShuffleBag.shift() || null;
+    }
+    if (next) {
+        fallbackLastPath = next;
+    }
+    return next;
+}
 export async function getImageData(client, paletteLength = 512, useHexPalette = true, image_path = null, imgData = null) {
     let imageset = _.find(Data.playlists, (p) => p.id == client.imagesetId);
     if (!imageset) {
@@ -27,7 +59,7 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
     else if (imgData) {
         path = 'temp.gif';
     }
-    var path = reqPath || images?.[index] || imageStats?.[_.random(imageStats.length - 1)].id;
+    var path = reqPath || images?.[index] || getNextFallbackImagePath(imageStats);
     if (!path) {
         return { success: false, msg: JSON.stringify({ warning: 'no playlist and no backup image' }) };
     }
