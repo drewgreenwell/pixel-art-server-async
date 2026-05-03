@@ -1,10 +1,10 @@
 # Pixel Art Server
-This is simple server to supply images to [a matching WLED usermod](https://github.com/drewgreenwell/wled-async-pixel-art-client) to display on matrices of different sizes.
+This is simple server to supply images to [an optional matching WLED usermod](https://github.com/drewgreenwell/wled-async-pixel-art-client) to display on matrices of different sizes.
 
 ![screen](/screenshots/screen-large.gif)
 ![admin interface](/screenshots/admin.png)
 
-## Project status
+## Project status 
 This project is currently a work in progress to improve and add features to the original project by [hughc](https://github.com/hughc/pixel-art-server). It is in active use and working well but some features are still being planned and developed.
 
 Current progress (May 2026):

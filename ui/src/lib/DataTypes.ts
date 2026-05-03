@@ -54,4 +54,10 @@ export interface Tools {
     playing: boolean;
     paintBrush: boolean;
     paintBucket: boolean;
+    selectMode: boolean;
+    selectShape: 'rect' | 'ellipse';
+    paintSquareSolid: boolean;
+    paintSquareOutline: boolean;
+    paintCircleSolid: boolean;
+    paintCircleOutline: boolean;
 }

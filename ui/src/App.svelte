@@ -78,7 +78,7 @@
       <Fa icon={faPlay} />
     </button>
     <button
-      aria-label="Delete Image"
+      aria-label="Stop Playing on WLED"
       onclick={() => {
         stopWledServer();
       }}
@@ -89,7 +89,7 @@
 
     <input type="range" min="0" max="255" bind:value={brightness} />
     <button
-      aria-label="Delete Image"
+      aria-label="Set WLED Brightness"
       onclick={() => {
         setBrightness(brightness);
       }}

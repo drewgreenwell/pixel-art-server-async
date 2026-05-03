@@ -19,6 +19,7 @@
     "vite": "^7.2.4"
   },
   "dependencies": {
+    "@fortawesome/free-regular-svg-icons": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.1.0",
     "svelte-5-french-toast": "^2.0.6",
     "svelte-dnd-action": "^0.9.69",
