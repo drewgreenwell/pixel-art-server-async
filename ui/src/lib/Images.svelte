@@ -480,6 +480,7 @@
     draggedEl.style.height = '50px';
     draggedEl.style.width = '50px';
     draggedEl.style.overflow = 'hidden';
+    draggedEl.style.pointerEvents = 'none';
   }
 
   function syncDragItemsToPalette() {
@@ -1474,7 +1475,7 @@
     const pivotX = floatingSelection.pivotX;
     const pivotY = floatingSelection.pivotY;
 
-    return transformFloatingSelection((x, y, bounds) => {
+    const rotatePoint = (x: number, y: number) => {
       const dx = x - pivotX;
       const dy = y - pivotY;
 
@@ -1489,7 +1490,75 @@
         x: Math.round(pivotX + dy),
         y: Math.round(pivotY - dx),
       };
+    };
+
+    const rotatedKeys = floatingSelection.currentKeys.map((key) => {
+      const [x, y] = key.split(',').map(Number);
+      const next = rotatePoint(x, y);
+      return `${next.x},${next.y}`;
     });
+
+    const rotatedOriginByCurrent: Record<string, string> = {};
+    for (const [currentKey, originKey] of Object.entries(
+      floatingSelection.originByCurrent,
+    )) {
+      const [x, y] = currentKey.split(',').map(Number);
+      const next = rotatePoint(x, y);
+      rotatedOriginByCurrent[`${next.x},${next.y}`] = originKey;
+    }
+
+    const rotatedFramePixels: Record<number, Record<string, number>> = {};
+    for (const [frameKey, pixels] of Object.entries(
+      floatingSelection.framePixels,
+    )) {
+      const nextPixels: Record<string, number> = {};
+      for (const [key, value] of Object.entries(pixels)) {
+        const [x, y] = key.split(',').map(Number);
+        const next = rotatePoint(x, y);
+        nextPixels[`${next.x},${next.y}`] = value;
+      }
+      rotatedFramePixels[Number(frameKey)] = nextPixels;
+    }
+
+    const rotatedBounds = getKeyBounds(rotatedKeys);
+    if (!rotatedBounds) return false;
+
+    // Re-center to the original pivot after rounding to prevent directional drift.
+    const rotatedCenterX = (rotatedBounds.minX + rotatedBounds.maxX) / 2;
+    const rotatedCenterY = (rotatedBounds.minY + rotatedBounds.maxY) / 2;
+    const shiftX = Math.round(pivotX - rotatedCenterX);
+    const shiftY = Math.round(pivotY - rotatedCenterY);
+
+    const shiftKey = (key: string) => {
+      const [x, y] = key.split(',').map(Number);
+      return `${x + shiftX},${y + shiftY}`;
+    };
+
+    const finalKeys = rotatedKeys.map(shiftKey);
+    const finalOriginByCurrent: Record<string, string> = {};
+    for (const [currentKey, originKey] of Object.entries(
+      rotatedOriginByCurrent,
+    )) {
+      finalOriginByCurrent[shiftKey(currentKey)] = originKey;
+    }
+
+    const finalFramePixels: Record<number, Record<string, number>> = {};
+    for (const [frameKey, pixels] of Object.entries(rotatedFramePixels)) {
+      const shiftedPixels: Record<string, number> = {};
+      for (const [key, value] of Object.entries(pixels)) {
+        shiftedPixels[shiftKey(key)] = value;
+      }
+      finalFramePixels[Number(frameKey)] = shiftedPixels;
+    }
+
+    floatingSelection = {
+      ...floatingSelection,
+      currentKeys: [...new Set(finalKeys)],
+      originByCurrent: finalOriginByCurrent,
+      framePixels: finalFramePixels,
+    };
+
+    return true;
   }
 
   function rotateFrame(
@@ -2680,14 +2749,16 @@
       <p>Current palette length: {currentPalette.length}</p>
       <div
         class="image-palette"
+        role="list"
+        aria-label="Image palette colors"
         style="--highlightcolor:{highlightColor}"
         use:dndzone={{
           items: dragItems,
           flipDurationMs: 200,
           dropFromOthersDisabled: true,
           morphDisabled: true,
-          useCursorForDetection: true,
-          centreDraggedOnCursor: true,
+          useCursorForDetection: false,
+          centreDraggedOnCursor: false,
           transformDraggedElement,
         }}
         onconsider={handlePaletteSort}
