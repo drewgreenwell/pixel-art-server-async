@@ -728,11 +728,11 @@ img.rotate-90 {
   }
 }
 
-[aria-label]:not([aria-label='']):not(.move):not(.shape-btn):not(.shape-confirm):not(.shape-cancel) {
+[aria-label]:not([aria-label='']):not(.move):not(.shape-btn):not(.shape-confirm):not(.shape-cancel):not(.image-item) {
   position: relative;
 }
 
-[aria-label]:not([aria-label='']):not(.pixel):not(.nav-item):hover::after {
+[aria-label]:not([aria-label='']):not(.pixel):not(.nav-item):not(.image-item)::after {
   content: attr(aria-label);
   position: absolute;
   bottom: calc(100% + 4px);
@@ -747,6 +747,16 @@ img.rotate-90 {
   font-size: 0.7rem;
   pointer-events: none;
   z-index: 200;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 120ms ease-out;
+  transition-delay: 0ms;
+}
+
+[aria-label]:not([aria-label='']):not(.pixel):not(.nav-item):not(.image-item):hover::after {
+  opacity: 1;
+  visibility: visible;
+  transition-delay: 180ms;
 }
 
 .pixel-grid .pixel.active::before {

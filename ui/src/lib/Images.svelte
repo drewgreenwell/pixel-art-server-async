@@ -482,6 +482,30 @@
     draggedEl.style.overflow = 'hidden';
   }
 
+  function syncDragItemsToPalette() {
+    dragItems = currentPalette.map((color, i) => ({
+      id: i,
+      color,
+    }));
+  }
+
+  let paletteDragSourceId: number | null = $state(null);
+  let paletteDropTargetId: number | null = $state(null);
+
+  function clearPaletteDragTracking() {
+    paletteDragSourceId = null;
+    paletteDropTargetId = null;
+  }
+
+  function setPaletteDropTarget(targetId: number) {
+    if (paletteDragSourceId === null) return;
+    if (targetId === paletteDragSourceId) {
+      paletteDropTargetId = null;
+      return;
+    }
+    paletteDropTargetId = targetId;
+  }
+
   function applyDroppedColorToTarget(sourceId: number, targetId: number) {
     if (sourceId === targetId || !activeImage) return;
     if (sourceId < 0 || targetId < 0) return;
@@ -492,10 +516,7 @@
     if (!sourceColor) return;
 
     currentPalette[targetId] = sourceColor;
-    const targetItem = dragItems.find((item) => item.id === targetId);
-    if (targetItem) {
-      targetItem.color = sourceColor;
-    }
+    syncDragItemsToPalette();
 
     if (activePaletteIdx === targetId) {
       activePaletteColor.set('#' + sourceColor);
@@ -511,44 +532,61 @@
       info: { trigger: TRIGGERS; id: string | number };
     };
   }) {
-    const oldItems = [...dragItems];
-    const newItems = e.detail.items;
+    const stableItems = currentPalette.map((color, i) => ({
+      id: i,
+      color,
+    }));
+    const projectedItems = e.detail.items;
     const draggedId = Number(e.detail.info.id);
+    const trackedSourceId = paletteDragSourceId;
+    const trackedTargetId = paletteDropTargetId;
+    clearPaletteDragTracking();
 
     // Keep palette slot order fixed after drag interaction.
-    dragItems = oldItems;
+    dragItems = stableItems;
 
-    if (e.detail.info.trigger !== TRIGGERS.DROPPED_INTO_ZONE) return;
-    if (!Number.isFinite(draggedId)) return;
+    if (e.detail.info.trigger === TRIGGERS.DRAG_STOPPED) return;
+    const sourceId = Number.isFinite(draggedId) ? draggedId : trackedSourceId;
+    if (sourceId === null) return;
+    if (sourceId < 0 || sourceId >= stableItems.length) return;
 
-    const sourceIndex = oldItems.findIndex(
+    const destinationIndex = projectedItems.findIndex(
       (item) => Number(item.id) === draggedId,
     );
-    const destinationIndex = newItems.findIndex(
-      (item) => Number(item.id) === draggedId,
-    );
 
-    if (sourceIndex === -1 || destinationIndex === -1) return;
-    if (sourceIndex === destinationIndex) return;
+    const targetId =
+      trackedTargetId !== null &&
+      trackedTargetId >= 0 &&
+      trackedTargetId < stableItems.length
+        ? trackedTargetId
+        : destinationIndex;
 
-    const sourceItem = oldItems[sourceIndex];
-    const targetItem = oldItems[destinationIndex];
+    if (targetId === -1) return;
+    if (sourceId === targetId) return;
+    if (targetId < 0 || targetId >= stableItems.length) return;
+
+    const sourceItem = stableItems[sourceId];
+    const targetItem = stableItems[targetId];
     if (!sourceItem || !targetItem) return;
     if (sourceItem.id === targetItem.id) return;
 
     showCustomConfirm(
       'Update palette color?',
       `Replace #${targetItem.color.toUpperCase()} with #${sourceItem.color.toUpperCase()}?`,
-      () => applyDroppedColorToTarget(sourceItem.id, targetItem.id),
+      () => applyDroppedColorToTarget(sourceId, targetId),
       'Apply Color',
       'Keep Target',
     );
   }
 
-  function handlePaletteSort(_e: any) {
-    // Keep palette slot order fixed while dragging.
-    // We still use finalize payload to infer source/target for confirmation.
-    return;
+  function handlePaletteSort(e: {
+    detail: { items: Item[]; info: { id: string | number } };
+  }) {
+    const draggedId = Number(e.detail.info.id);
+    paletteDragSourceId = Number.isFinite(draggedId) ? draggedId : null;
+
+    // Keep visual slot order fixed while still feeding dndzone updated items.
+    dragItems = [...e.detail.items].sort((a, b) => Number(a.id) - Number(b.id));
   }
 
   function setPalette(i: number) {
@@ -734,10 +772,7 @@
 
   function loadPalette(p: string[]) {
     currentPalette = p;
-    dragItems = currentPalette.map((color, i) => ({
-      id: i,
-      color: color,
-    }));
+    syncDragItemsToPalette();
   }
 
   function loadImage(d: ImageData) {
@@ -1194,10 +1229,9 @@
     }
     let image = $state.snapshot(activeImage);
     const num_of_rows = image.meta.height;
-    let start = num_of_rows * activeFrameIdx;
-    //let startFrame = image.rows[start].frame;
-    let new_rows = image.rows.slice(activeFrameIdx * num_of_rows, num_of_rows);
-    let frame = -1;
+    const start = num_of_rows * activeFrameIdx;
+    const end = start + num_of_rows;
+    const new_rows = [...image.rows.slice(0, start), ...image.rows.slice(end)];
     // for (let i = 0; i < new_rows.length; i++) {
     //   if (i % num_of_rows == 0) {
     //     frame++;
@@ -1692,6 +1726,8 @@
       <div class="image-list">
         {#each images as img, i}
           <button
+            aria-label={`Image: ${img.id.split('/').pop() ?? img.id}`}
+            title={img.id.split('/').pop() ?? img.id}
             onclick={() => {
               imageDirty
                 ? userConfirm(ConfirmType.Save, () => {
@@ -2661,6 +2697,8 @@
           <button
             class={activePaletteIdx == item.id ? 'active' : ''}
             data-palette-id={item.id}
+            onmouseenter={() => setPaletteDropTarget(item.id)}
+            onmousemove={() => setPaletteDropTarget(item.id)}
             onclick={() => {
               setPalette(item.id);
             }}
