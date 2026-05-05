@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ensureDirSync } from "fs-extra";
 import { resolve } from "path";
+import sharp from "sharp";
 import { Data, ImageFile } from "../utils/data.js";
 import { addAnImagePath, addAnImageStat, returnAnImageStat, returnAnImageStatFromBuffer } from "../utils/get_image_stat.js";
 import { UploadedFile } from "express-fileupload";
@@ -33,7 +34,26 @@ export async function editFile(req: Request, res: Response) {
   ensureDirSync(resolve(Data.basePath, `${Data.imageDirectoryPath}/${subdir ? subdir + "/" : ""}`));
   const shortPath = `${subdir ? subdir + "/" : ""}${newName}`;
   const newPath = resolve(Data.basePath, `${Data.imageDirectoryPath}/${shortPath}`);
-  getImageData(Data.wledConfig.client, 256, /* useHexPalette */ true, null, uploadedFile.data)
+
+  const cropX = req.body.cropX != null ? parseInt(req.body.cropX) : null;
+  const cropY = req.body.cropY != null ? parseInt(req.body.cropY) : null;
+  const cropW = req.body.cropW != null ? parseInt(req.body.cropW) : null;
+  const cropH = req.body.cropH != null ? parseInt(req.body.cropH) : null;
+  const hasCrop = cropX !== null && cropY !== null && cropW !== null && cropH !== null
+    && !isNaN(cropX) && !isNaN(cropY) && !isNaN(cropW) && !isNaN(cropH);
+
+  let fileBuffer: Buffer = uploadedFile.data;
+  if (hasCrop) {
+    try {
+      fileBuffer = await sharp(uploadedFile.data, { animated: true })
+        .extract({ left: cropX!, top: cropY!, width: cropW!, height: cropH! })
+        .toBuffer();
+    } catch (err) {
+      return res.status(500).send({ success: false, error: String(err) });
+    }
+  }
+
+  getImageData(Data.wledConfig.client, 256, /* useHexPalette */ true, null, fileBuffer)
     .then((result) => {
       if (result.data)
         result.data.meta.path = newName;

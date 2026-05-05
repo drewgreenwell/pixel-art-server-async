@@ -5,3 +5,4 @@ img/**
 !img/sample.gif
 .history
 data/*.json
+*.code-workspace

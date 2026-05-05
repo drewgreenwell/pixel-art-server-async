@@ -21,6 +21,7 @@ import { LedAnimationApp } from './server-wled.js'
 import dotenv from 'dotenv';
 import { editFile } from './endpoints/edit_file.js';
 import { deleteImage } from './endpoints/delete_image.js';
+import { deleteClient } from './endpoints/delete_client.js';
 // Load environment variables
 dotenv.config();
 
@@ -188,6 +189,8 @@ app.post("/clients", function (req, res) {
   saveClient(clientData, true);
   return res.send({ success: true });
 });
+
+app.delete("/clients/:id", deleteClient);
 
 app.post("/imageset", replaceImageSet);
 

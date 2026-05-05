@@ -3,6 +3,10 @@
   --indicatorcolor: rgba(12, 255, 12, 0.6);
   --paintbrsh: '';
   --paintbucket: '';
+  --btn-bg: #1a1a1a;
+  --btn-bg-hover: #2a2a2a;
+  --btn-color: rgba(255, 255, 255, 0.87);
+  --btn-disabled-opacity: 0.4;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -105,7 +109,8 @@ h2 {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--btn-bg);
+  color: var(--btn-color);
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -115,8 +120,9 @@ h2 {
 }
 
 .button:disabled:hover {
-  border-color: #1a1a1a;
+  border-color: transparent;
   cursor: not-allowed;
+  opacity: var(--btn-disabled-opacity);
 }
 
 .button:disabled>img {
@@ -136,14 +142,23 @@ h2 {
   :root {
     color: #213547;
     background-color: #ffffff;
+    --btn-bg: #e8e8e8;
+    --btn-bg-hover: #d5d5d5;
+    --btn-color: #213547;
   }
 
   a:hover {
     color: #747bff;
   }
 
-  button {
-    background-color: #f9f9f9;
+  button,
+  .button {
+    background-color: var(--btn-bg);
+    color: var(--btn-color);
+  }
+
+  button.small.tool img {
+    filter: invert(1);
   }
 }
 
@@ -224,11 +239,12 @@ h2 {
   overflow-y: scroll;
 }
 
-.image-palette button {
+.image-palette button:not(.button) {
+  color: white;
   text-shadow: 1px 1px black;
 }
 
-.image-palette button.active {
+.image-palette button:not(.button).active {
   border: 2px solid var(--highlightcolor);
 }
 
@@ -377,6 +393,14 @@ button.small.tool:last-child {
 button.small {
   padding: 0;
   margin: 0;
+}
+
+button.small:not(.tool) {
+  padding: 0.3em 0.7em;
+  font-size: 0.875em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
 }
 
 button.medium {

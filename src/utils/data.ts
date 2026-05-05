@@ -49,6 +49,7 @@ export interface Playlist {
     duration: number;
     brightness: number;
     backgroundColor: string;
+    imageDurations?: (number | null)[];
 }
 
 

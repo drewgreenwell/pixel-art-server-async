@@ -49,7 +49,7 @@ export async function getImageData(client: PixelArtClient, paletteLength: number
         console.warn(`imageset not found for id '${client.imagesetId}'`);
         imageset = Data.playlists[0] || {};
     }
-    let { images, id: index, duration, brightness, backgroundColor } = imageset;
+    let { images, id: index, duration, brightness, backgroundColor, imageDurations } = imageset;
     var imageCount = images?.length;
     if (_.isUndefined(index))
         index = 0;
@@ -184,6 +184,11 @@ export async function getImageData(client: PixelArtClient, paletteLength: number
             return memo;
         }, []);
         console.log(`>> server returns ${path} with ${rows.length} rows over ${frames.length} frames and ${outPalette.length} palette colors`);
+        // apply per-image duration override if set
+        const perImageDuration = imageDurations?.[index];
+        if (perImageDuration != null && perImageDuration > 0) {
+            duration = perImageDuration;
+        }
         // add extra metadata
         duration = duration || 10;
         brightness = brightness || 25;

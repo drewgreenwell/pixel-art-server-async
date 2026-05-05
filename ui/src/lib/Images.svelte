@@ -50,6 +50,7 @@
   } from '@fortawesome/free-regular-svg-icons';
 
   import Modal from './Modal.svelte';
+  import CropModal from './CropModal.svelte';
   import MouseCursor from './MouseCursor.svelte';
   import FrameCanvas from './FrameCanvas.svelte';
   import {
@@ -62,6 +63,13 @@
   let showSaveModal = $state(false);
   let showConfirmModal = $state(false);
   let showFrameModal = $state(false);
+  let showCropModal = $state(false);
+  let cropFile = $state<File | null>(null);
+  // pending upload params while crop modal is open
+  let pendingEditOnly = $state(false);
+  let pendingFrameInsert = $state(false);
+
+  const CROP_THRESHOLD = 500; // px — show crop dialog if either dim exceeds this
   let confirmTitle = $state('');
   let confirmMessage = $state('');
   let confirmCancelText = $state('cancel');
@@ -851,21 +859,18 @@
   let fileInput: HTMLInputElement;
   let files: any = $state(null);
   let subdirectory = $state('');
-  const uploadImages = (
-    event: Event & { currentTarget: HTMLButtonElement },
-    editOnly: boolean = false,
-    frameInsert: boolean = false,
-  ) => {
-    event.preventDefault();
-    if (files.length == 0) {
-      return false;
-    }
+
+  /** Actually POSTs the blob/file to the server. */
+  function doUpload(blob: Blob, filename: string, editOnly: boolean, frameInsert: boolean, crop?: { x: number; y: number; w: number; h: number }) {
     let formData = new FormData();
-    //for (let i = 0; i < files.length; i++) {
-    //  formData.append('files', files[i]);
-    //}
-    formData.append('file', files[0]);
+    formData.append('file', blob, filename);
     formData.append('subdir', !editOnly ? subdirectory : '');
+    if (crop) {
+      formData.append('cropX', String(crop.x));
+      formData.append('cropY', String(crop.y));
+      formData.append('cropW', String(crop.w));
+      formData.append('cropH', String(crop.h));
+    }
     const path = editOnly ? '/edit-file' : '/upload';
     fetch(host + path, {
       method: 'POST',
@@ -911,6 +916,38 @@
         console.error(err);
         toast.error('Could not upload file! ' + err.message);
       });
+  }
+
+  const uploadImages = (
+    event: Event & { currentTarget: HTMLButtonElement },
+    editOnly: boolean = false,
+    frameInsert: boolean = false,
+  ) => {
+    event.preventDefault();
+    if (files.length == 0) {
+      return false;
+    }
+    const file: File = files[0];
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      if (img.naturalWidth > CROP_THRESHOLD || img.naturalHeight > CROP_THRESHOLD) {
+        // Large image — show crop modal first
+        cropFile = file;
+        pendingEditOnly = editOnly;
+        pendingFrameInsert = frameInsert;
+        showCropModal = true;
+      } else {
+        doUpload(file, file.name, editOnly, frameInsert);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      // Not a displayable image, upload as-is
+      doUpload(file, file.name, editOnly, frameInsert);
+    };
+    img.src = url;
   };
 
   const editImage = (
@@ -2897,4 +2934,15 @@
       : paintbrush}
   containerSelector=".pixel-grid"
   showCursor={tools.paintBrush || tools.paintBucket || !!activeShapeTool}
+/>
+
+<CropModal
+  bind:showModal={showCropModal}
+  bind:file={cropFile}
+  oncrop={(blob, crop) => {
+    if (cropFile) doUpload(blob, cropFile.name, pendingEditOnly, pendingFrameInsert, crop);
+  }}
+  oncancel={() => {
+    cropFile = null;
+  }}
 />

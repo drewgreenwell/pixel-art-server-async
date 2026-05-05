@@ -12,7 +12,8 @@ export function replaceImageSet(req: Request, res: Response) {
     duration: parseInt('' + req.body.duration),
     brightness: parseInt('' + req.body.brightness),
     images: req.body.images,
-    backgroundColor: req.body.backgroundColor
+    backgroundColor: req.body.backgroundColor,
+    imageDurations: Array.isArray(req.body.imageDurations) ? req.body.imageDurations : undefined,
   };
   _.pick(
     req.body,

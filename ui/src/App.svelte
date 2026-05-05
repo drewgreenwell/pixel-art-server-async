@@ -7,6 +7,8 @@
   import viteLogo from '/vite.svg';
   import Counter from './lib/Counter.svelte';
   import Images from './lib/Images.svelte';
+  import Clients from './lib/Clients.svelte';
+  import Playlists from './lib/Playlists.svelte';
 
   const views = ['images', 'clients', 'playlists'];
   let activeView = $state(views[0]);
@@ -119,13 +121,13 @@
       class="view{activeView == 'clients' ? ' active' : ''}"
       data-view="clients"
     >
-      Clients
+      <Clients host={serverUrl} />
     </div>
     <div
       class="view{activeView == 'playlists' ? ' active' : ''}"
       data-view="playlists"
     >
-      Playlists
+      <Playlists host={serverUrl} />
     </div>
   </section>
 </main>
