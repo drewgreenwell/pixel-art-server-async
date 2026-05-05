@@ -90,6 +90,12 @@ h2 {
   padding-bottom: 3em;
 }
 
+.header .wled-global {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
 .header nav {
   margin-left: auto;
 }
@@ -501,6 +507,7 @@ button.medium {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  border-radius: 50%;
   box-shadow: var(--highlightcolor) 0px 0px 40px 40px;
 }
 
@@ -559,15 +566,11 @@ button.medium {
 .shape-paint-wrap .shape-confirm {
   top: 0px;
   left: -36px;
-  background-color: #16361a;
-  border-color: #2d7a39;
 }
 
 .shape-paint-wrap .shape-cancel {
   top: 0px;
   left: 36px;
-  background-color: #3a1616;
-  border-color: #8a2c2c;
 }
 
 .pixel-grid .pixel.shape-preview::after {

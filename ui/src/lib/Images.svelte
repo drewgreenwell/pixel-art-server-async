@@ -1824,6 +1824,37 @@
   }
 </script>
 
+<svelte:window
+  onkeydown={(e) => {
+    // ignore when focus is on an input/textarea/select
+    const tag = (e.target as HTMLElement)?.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (activeImage == null) return;
+    if (activePaletteIdx === -1) return;
+
+    if (e.key === 'p') {
+      tools.paintBrush = !tools.paintBrush;
+      tools.paintBucket = false;
+      setShapeTool(null);
+    } else if (e.key === 'b') {
+      tools.paintBucket = !tools.paintBucket;
+      tools.paintBrush = false;
+      setShapeTool(null);
+    } else if (e.key === 's') {
+      const anyActive = !!activeShapeTool;
+      tools.paintBrush = false;
+      tools.paintBucket = false;
+      setShapeTool(anyActive ? null : 'squareSolid');
+    } else if (e.key === 'ArrowLeft' && activePaletteIdx > -1) {
+      e.preventDefault();
+      activePaletteIdx = activePaletteIdx > 0 ? activePaletteIdx - 1 : currentPalette.length - 1;
+    } else if (e.key === 'ArrowRight' && activePaletteIdx > -1) {
+      e.preventDefault();
+      activePaletteIdx = activePaletteIdx < currentPalette.length - 1 ? activePaletteIdx + 1 : 0;
+    }
+  }}
+/>
+
 <div class="images subview active">
   <div class="image-selector">
     {#await getImages()}
@@ -2590,7 +2621,7 @@
             : ''}"
         >
           <button
-            aria-label="Paint Brush"
+            aria-label="Paint Brush (P)"
             class="button small tool {tools.paintBrush ? 'active' : null}"
             disabled={activeImage == null ||
               activePaletteIdx == -1 ||
@@ -2606,7 +2637,7 @@
             <Fa icon={faPaintBrush} />
           </button>
           <button
-            aria-label={`Paint Bucket${selectionActionSuffix}`}
+            aria-label={`Paint Bucket (B)${selectionActionSuffix}`}
             class="button small tool {tools.paintBucket ? 'active' : null}"
             disabled={activeImage == null ||
               activePaletteIdx == -1 ||
@@ -2627,7 +2658,7 @@
           >
             <button
               type="button"
-              aria-label="Shape Tools"
+              aria-label="Shape Tools (S)"
               class="button small tool toggle {activeShapeTool ? 'active' : ''}"
               disabled={activeImage == null ||
                 activePaletteIdx == -1 ||
