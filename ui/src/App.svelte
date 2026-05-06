@@ -1,5 +1,5 @@
 <script lang="ts">
-  const serverUrl = 'http://192.168.1.35:8080';
+  const serverUrl = import.meta.env.VITE_SERVER_URL ?? '';
   import toast, { Toaster } from 'svelte-5-french-toast';
   import Fa from 'svelte-fa';
   import { faPlay, faStop, faSun } from '@fortawesome/free-solid-svg-icons';
