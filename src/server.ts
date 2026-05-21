@@ -88,6 +88,16 @@ console.log({ plpath: Data.playlistFilePath, clientsFilePath: Data.clientsFilePa
 
 var app = express();
 
+// Chrome's Private Network Access policy requires this header on preflight responses
+// when the page origin (e.g. localhost:5173) requests a private IP (e.g. 192.168.x.x).
+// Must be set BEFORE cors() runs, since cors() calls res.end() on OPTIONS preflights.
+app.use((req, res, next) => {
+  if (req.headers['access-control-request-private-network']) {
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+  }
+  next();
+});
+
 const corsOptions = {
   origin: function (origin: any, callback: any) {
     if (isLocalNetwork(origin) || !origin) {
@@ -99,7 +109,7 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-app.use("/", express.static("public"));
+app.use("/", express.static("ui-dist"));
 //var bodyParser = require("body-parser");
 
 app.use(Data.staticImageBaseURL, express.static(Data.imageDirectoryPath));
