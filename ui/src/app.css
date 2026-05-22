@@ -733,9 +733,9 @@ img.rotate-90 {
   height: 100%;
   width: 100%;
   pointer-events: none;
-  background-color: var(--highlightcolor);
+  background-color: transparent;
   border: 1.5px dashed var(--highlightcolor);
-  opacity: 0.35;
+  opacity: 1;
   display: block;
   z-index: 2;
 }

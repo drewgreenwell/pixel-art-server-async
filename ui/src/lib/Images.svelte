@@ -58,6 +58,7 @@
     flipRegionVertical,
     getPixelSquare,
     getPixelEllipse,
+    insertFramesAt,
   } from './ImageOperations';
 
   let showSaveModal = $state(false);
@@ -68,6 +69,14 @@
   // pending upload params while crop modal is open
   let pendingEditOnly = $state(false);
   let pendingFrameInsert = $state(false);
+  let selectedFrameIndexes = $state<number[]>([]);
+
+  $effect(() => {
+    if (!showFrameModal) {
+      frameImage = null;
+      selectedFrameIndexes = [];
+    }
+  });
 
   const CROP_THRESHOLD = 500; // px — show crop dialog if either dim exceeds this
   let confirmTitle = $state('');
@@ -112,6 +121,9 @@
   const closeModal = () => {
     showSaveModal = false;
     showConfirmModal = false;
+    showFrameModal = false;
+    frameImage = null;
+    selectedFrameIndexes = [];
     let dialogs = document.querySelectorAll('dialog');
     if (dialogs.length) {
       for (let d of dialogs) {
@@ -785,6 +797,8 @@
   }
 
   function loadImage(d: ImageData) {
+    activeFrameIdx = 0;
+    activePaletteIdx = -1;
     loadPalette(d.palette);
     activeImage = d;
   }
@@ -856,12 +870,64 @@
       });
   }
 
+  function saveInsertedFrames(
+    event: Event & { currentTarget: HTMLButtonElement },
+  ) {
+    event.preventDefault();
+
+    if (!activeImage) {
+      toast.error('Current image is null!');
+      return;
+    }
+
+    if (!frameImage) {
+      toast.error('No frame image loaded!');
+      return;
+    }
+
+    if (!selectedFrameIndexes.length) {
+      toast.error('Select at least one frame to insert.');
+      return;
+    }
+
+    const currentFrameImage = frameImage;
+    const frameHeight = currentFrameImage.meta.height;
+    const selectedRows = selectedFrameIndexes.flatMap((frameIndex) =>
+      currentFrameImage.rows.slice(
+        frameIndex * frameHeight,
+        frameIndex * frameHeight + frameHeight,
+      ),
+    );
+
+    activeImage = insertFramesAt(
+      activeFrameIdx + 1,
+      $state.snapshot(activeImage),
+      $state.snapshot(currentPalette),
+      selectedRows,
+      frameImage.palette,
+    );
+    loadPalette(activeImage.palette);
+    activeFrameIdx = Math.min(
+      activeImage.meta.frames - 1,
+      activeFrameIdx + selectedFrameIndexes.length,
+    );
+    imageDirty = true;
+    closeModal();
+    toast.success('Frame inserted');
+  }
+
   let fileInput: HTMLInputElement;
   let files: any = $state(null);
   let subdirectory = $state('');
 
   /** Actually POSTs the blob/file to the server. */
-  function doUpload(blob: Blob, filename: string, editOnly: boolean, frameInsert: boolean, crop?: { x: number; y: number; w: number; h: number }) {
+  function doUpload(
+    blob: Blob,
+    filename: string,
+    editOnly: boolean,
+    frameInsert: boolean,
+    crop?: { x: number; y: number; w: number; h: number },
+  ) {
     let formData = new FormData();
     formData.append('file', blob, filename);
     formData.append('subdir', !editOnly ? subdirectory : '');
@@ -891,6 +957,7 @@
               saveName = d.stats.data.meta.path;
             } else {
               frameImage = d.stats.data;
+              selectedFrameIndexes = [...Array(frameImage.meta.frames).keys()];
               showFrameModal = true;
             }
           } else {
@@ -932,7 +999,10 @@
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      if (img.naturalWidth > CROP_THRESHOLD || img.naturalHeight > CROP_THRESHOLD) {
+      if (
+        img.naturalWidth > CROP_THRESHOLD ||
+        img.naturalHeight > CROP_THRESHOLD
+      ) {
         // Large image — show crop modal first
         cropFile = file;
         pendingEditOnly = editOnly;
@@ -1847,10 +1917,12 @@
       setShapeTool(anyActive ? null : 'squareSolid');
     } else if (e.key === 'ArrowLeft' && activePaletteIdx > -1) {
       e.preventDefault();
-      activePaletteIdx = activePaletteIdx > 0 ? activePaletteIdx - 1 : currentPalette.length - 1;
+      activePaletteIdx =
+        activePaletteIdx > 0 ? activePaletteIdx - 1 : currentPalette.length - 1;
     } else if (e.key === 'ArrowRight' && activePaletteIdx > -1) {
       e.preventDefault();
-      activePaletteIdx = activePaletteIdx < currentPalette.length - 1 ? activePaletteIdx + 1 : 0;
+      activePaletteIdx =
+        activePaletteIdx < currentPalette.length - 1 ? activePaletteIdx + 1 : 0;
     }
   }}
 />
@@ -2927,7 +2999,18 @@
     <div class="form-control inline">
       {#if frameImage != null}
         {#each { length: frameImage.meta.frames } as _, i}
-          <input type="checkbox" id="inputFrame{i}" class="frame-checkbox" />
+          <input
+            type="checkbox"
+            id="inputFrame{i}"
+            class="frame-checkbox"
+            checked={selectedFrameIndexes.includes(i)}
+            onclick={(e) => {
+              const checked = (e.currentTarget as HTMLInputElement).checked;
+              selectedFrameIndexes = checked
+                ? [...selectedFrameIndexes, i]
+                : selectedFrameIndexes.filter((frameIndex) => frameIndex !== i);
+            }}
+          />
           <label for="inputFrame{i}">
             <FrameCanvas
               height="64"
@@ -2935,7 +3018,7 @@
               frameId={i}
               data={frameImage.rows.slice(
                 i * frameImage.meta.height,
-                frameImage.meta.height,
+                i * frameImage.meta.height + frameImage.meta.height,
               )}
               palette={frameImage.palette}
             ></FrameCanvas>
@@ -2950,7 +3033,7 @@
           }}
           class="button">Cancel</button
         >
-        <button onclick={(e) => upLoadJson(e)} class="button active"
+        <button onclick={(e) => saveInsertedFrames(e)} class="button active"
           >Save Changes</button
         >
       </div>
@@ -2971,7 +3054,8 @@
   bind:showModal={showCropModal}
   bind:file={cropFile}
   oncrop={(blob, crop) => {
-    if (cropFile) doUpload(blob, cropFile.name, pendingEditOnly, pendingFrameInsert, crop);
+    if (cropFile)
+      doUpload(blob, cropFile.name, pendingEditOnly, pendingFrameInsert, crop);
   }}
   oncancel={() => {
     cropFile = null;

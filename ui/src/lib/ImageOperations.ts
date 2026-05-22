@@ -5,7 +5,10 @@ export function insertFramesAt(index: number, image: ImageData, imagePalette: st
     if (!image)
         return image;
     imagePalette = [...(imagePalette ?? image.palette)];
-    frameRows = structuredClone(frameRows);
+    frameRows = frameRows.map((row) => ({
+        ...row,
+        pixels: [...row.pixels],
+    }));
     let start = index;
     const frames = image.meta.frames;
     if (start < 0) {
@@ -14,6 +17,8 @@ export function insertFramesAt(index: number, image: ImageData, imagePalette: st
     } else if (start > frames) {
         start = frames;
     }
+    const rowStart = start * image.meta.height;
+    const insertedFrames = Math.max(1, Math.round(frameRows.length / image.meta.height));
     // add unique palette entries
     frameRows.flatMap(r => r.pixels.filter(onlyUnique)).filter(onlyUnique).forEach((p, i) => {
         let color = framePalette[p];
@@ -31,7 +36,9 @@ export function insertFramesAt(index: number, image: ImageData, imagePalette: st
         }
     });
     image.palette = imagePalette;
-    image.rows.splice(start, 0, ...frameRows);
+    image.rows.splice(rowStart, 0, ...frameRows);
+    image.meta.frames = image.meta.frames + insertedFrames;
+    image.meta.paletteLength = imagePalette.length;
     let frame = 0;
     image.rows.forEach((r, i) => {
         r.row = i;

@@ -22,9 +22,9 @@ export interface UploadResult {
     error?: string;
 }
 export interface ImageRow {
-    // row: number;
-    // frame: number;
-    // duration: number;
+    row?: number;
+    frame?: number;
+    duration?: number;
     pixels: number[];
 }
 export interface ImageData {
