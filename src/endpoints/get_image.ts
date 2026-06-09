@@ -1,5 +1,5 @@
 import _ from 'underscore';
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
 import { Data, PixelArtClient } from '../utils/data.js';
 import { getImageData } from '../utils/get_image_data.js';
 import { getImgPixelsBuffer } from '../utils/get_pixel_buffer.js';
@@ -22,13 +22,18 @@ export async function getImage(req: Request, res: Response) {
   client.height = parseInt('' + height);
   paletteLength = parseInt('' + paletteLength);
   image_path = image_path != null && ('' + image_path).length ? '' + image_path : null;
-  const imageData = await getImageData(client, paletteLength, /* useHexPalette */ true, image_path = image_path, null);
+  const imageData = await getImageData(
+    client,
+    paletteLength,
+    /* useHexPalette */ true,
+    (image_path = image_path),
+    null,
+  );
   if (!imageData.success) {
     res.send(imageData.msg);
   } else {
     res.removeHeader('transfer-encoding');
-    res.contentType("application/json");
+    res.contentType('application/json');
     res.send(JSON.stringify(imageData.data));
   }
-};
-
+}

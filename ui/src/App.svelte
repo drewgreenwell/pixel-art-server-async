@@ -50,12 +50,13 @@
       });
   }
 
-  function setBrightness(val = 128) {
-    fetch(`${serverUrl}/wled/brightness?brightness=${val}`)
+  function setBrightness(val: number) {
+    const ids = selectedClientIds.length > 0 ? selectedClientIds : null;
+    fetch(`${serverUrl}/wled/brightness?brightness=${val}${ids !== null ? `&targetId=${ids.join(',')}` : ''}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.updated) {
-          toast.success('Brightness set');
+          toast.success(selectedClientIds.length > 0 ? `Brightness set for ${selectedClientIds.length} clients` : 'Brightness set');
         } else {
           toast.error('Brightness not set!');
         }

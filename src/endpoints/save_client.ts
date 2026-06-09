@@ -2,7 +2,7 @@ import fsextra from 'fs-extra';
 import _ from 'underscore';
 const { writeJSONSync } = fsextra;
 
-import { Data, PixelArtClient } from "../utils/data.js";
+import { Data, PixelArtClient } from '../utils/data.js';
 
 export function saveClient(clientData: PixelArtClient, overWriteFlag: boolean) {
   const existingClient = _.findWhere(Data.clients, { id: clientData.id });

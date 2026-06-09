@@ -1,8 +1,8 @@
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
 import fsextra from 'fs-extra';
 const { writeJSONSync } = fsextra;
-import { Data, Playlist } from "../utils/data.js";
-import _ from "underscore";
+import { Data, Playlist } from '../utils/data.js';
+import _ from 'underscore';
 
 export function replaceImageSet(req: Request, res: Response) {
   console.log('app.post("/imageset"', req.body);
@@ -15,16 +15,9 @@ export function replaceImageSet(req: Request, res: Response) {
     backgroundColor: req.body.backgroundColor,
     imageDurations: Array.isArray(req.body.imageDurations) ? req.body.imageDurations : undefined,
   };
-  _.pick(
-    req.body,
-    "id",
-    "name",
-    "duration",
-    "brightness",
-    "images"
-  );
+  _.pick(req.body, 'id', 'name', 'duration', 'brightness', 'images');
   if (!imagesetData.id) {
-    res.send({ success: false, error: "no client id supplied" });
+    res.send({ success: false, error: 'no client id supplied' });
     return;
   }
   saveImageset(imagesetData, true);

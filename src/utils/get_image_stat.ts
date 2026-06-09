@@ -1,7 +1,7 @@
-import sharp from "sharp";
-import { Data, ImageStat, ImageFile } from "./data.js";
+import sharp from 'sharp';
+import { Data, ImageStat, ImageFile } from './data.js';
 import fsextra from 'fs-extra';
-import _ from "underscore";
+import _ from 'underscore';
 const { readdirSync, statSync } = fsextra;
 
 let imageDirectoryCache: ImageFile[] = [];
@@ -59,7 +59,6 @@ export function removeAnImagePath(thePath: ImageFile): void {
   imageDirectoryCache.push(thePath);
 }
 
-
 export async function getAllImageStats(): Promise<ImageStat[]> {
   if (!_.isEmpty(imageStatsCache)) {
     // console.log({ msg: "returning imags fomr cache", imageStatsCache })
@@ -77,7 +76,7 @@ export async function getAllImageStats(): Promise<ImageStat[]> {
           output.push(getImageStat(imgObj, metadata));
         })
         .catch((err) => console.warn(`${path}: ${err}`));
-    })
+    }),
   );
   let results = await promises.then((results) => {
     imageStatsCache = output;
@@ -100,13 +99,13 @@ function getImageStat(imgObj: ImageFile, metadata: sharp.Metadata): ImageStat {
     format,
     hasAlpha,
     pages: pages ?? 1,
-    delay: delay ?? []
+    delay: delay ?? [],
   };
 }
 
 function gatherAllImages(basePath: string): ImageFile[] {
   if (!_.isEmpty(imageDirectoryCache)) {
-    console.log({ msg: "returning cached file values", imageDirectoryCache });
+    console.log({ msg: 'returning cached file values', imageDirectoryCache });
     return imageDirectoryCache;
   }
   const recursiveList = (dir: string, list: ImageFile[]) => {
