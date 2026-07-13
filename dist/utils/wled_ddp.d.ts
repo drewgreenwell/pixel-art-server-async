@@ -7,19 +7,24 @@ export declare class WLEDDdp {
     private readonly _socket;
     private readonly _port;
     private readonly _host;
-    private readonly _ledCount;
-    private readonly _autoTurnOn;
+    private _autoTurnOn;
+    private _ledCount;
+    private jsonClient;
     private initiallyOff;
+    private initialized;
+    private initPromise;
+    private disposed;
     private frameCount;
-    private readonly jsonClient;
     private readonly MAX_DATA_LEN;
-    private readonly VERSION;
-    private readonly DATA_TYPE;
-    private readonly OUTPUT_ID;
+    private readonly PACKET_DATA_LEN;
     private readonly VER1;
     private readonly PUSH;
     private readonly DATATYPE;
     private readonly SOURCE;
+    /**
+     * The number of LEDs in the strip
+     */
+    get ledCount(): number;
     /**
      * Creates a new WLEDDdp client
      * @param options Configuration options for the client
@@ -43,6 +48,7 @@ export declare class WLEDDdp {
      * @returns Promise that resolves when brightness has been set
      */
     setBrightness(brightness: number): Promise<void>;
+    dispose(): void;
     /**
      * Creates an array of LED color values with the specified initial fill
      * @param initialFill Optional initial color for all LEDs, defaults to [0,0,0] (off)

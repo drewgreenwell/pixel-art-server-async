@@ -52,9 +52,10 @@ export class PixelImagePlayer {
         if (frames > 1) {
             let f = incrementFrame ? this.currentFrame + 1 : this.currentFrame;
             this.currentFrame = f > frames - 1 ? 0 : f;
-            this.currentFrameTime = this.image.meta.durations[this.currentFrame] <= 0
-                ? this.defaultDelay
-                : this.image.meta.durations[this.currentFrame];
+            this.currentFrameTime =
+                this.image.meta.durations[this.currentFrame] <= 0
+                    ? this.defaultDelay
+                    : this.image.meta.durations[this.currentFrame];
         }
         else {
             this.currentFrameTime = this.defaultDelay;
@@ -69,11 +70,7 @@ export class PixelImagePlayer {
     // todo: output rgb palette as needed
     hexToRgbLed(hex) {
         var c = parseInt(hex, 16);
-        return isNaN(c) ? [0, 0, 0] : [
-            ((c >> 24) & 0xFF),
-            ((c >> 16) & 0xFF),
-            ((c >> 8) & 0xFF),
-        ];
+        return isNaN(c) ? [0, 0, 0] : [(c >> 24) & 0xff, (c >> 16) & 0xff, (c >> 8) & 0xff];
         // var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         // // console.log({ hex, result });
         // return result ? [

@@ -23,9 +23,12 @@ export interface ImageStat extends ImageFile {
 }
 export interface PixelArtClient {
     id: string;
+    name?: string;
     pixels: number;
     width: number;
     height: number;
+    wledHost: string;
+    wledPort: number;
     imagesetId?: number;
 }
 export interface Playlist {
@@ -35,6 +38,7 @@ export interface Playlist {
     duration: number;
     brightness: number;
     backgroundColor: string;
+    imageDurations?: (number | null)[];
 }
 export interface ImageRow {
     row: number;

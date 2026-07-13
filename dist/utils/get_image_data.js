@@ -1,6 +1,6 @@
 import _ from 'underscore';
-import { Data } from './data.js';
-import { getAllImageStats, returnAnImageStatFromBuffer } from './get_image_stat.js';
+import { Data, } from './data.js';
+import { getAllImageStats, returnAnImageStatFromBuffer, } from './get_image_stat.js';
 import { getImgPixelsBuffer } from './get_pixel_buffer.js';
 import quantize from 'quantize';
 let fallbackShuffleBag = [];
@@ -8,7 +8,9 @@ let fallbackShuffleSourceKey = '';
 let fallbackLastPath = null;
 function refillFallbackShuffleBag(imageIds) {
     fallbackShuffleBag = _.shuffle(imageIds);
-    if (fallbackLastPath && fallbackShuffleBag.length > 1 && fallbackShuffleBag[0] === fallbackLastPath) {
+    if (fallbackLastPath &&
+        fallbackShuffleBag.length > 1 &&
+        fallbackShuffleBag[0] === fallbackLastPath) {
         const first = fallbackShuffleBag.shift();
         if (first) {
             fallbackShuffleBag.push(first);
@@ -41,7 +43,7 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
         console.warn(`imageset not found for id '${client.imagesetId}'`);
         imageset = Data.playlists[0] || {};
     }
-    let { images, id: index, duration, brightness, backgroundColor } = imageset;
+    let { images, id: index, duration, brightness, backgroundColor, imageDurations } = imageset;
     var imageCount = images?.length;
     if (_.isUndefined(index))
         index = 0;
@@ -65,21 +67,28 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
     }
     imageset.id = index + 1;
     // console.log({ path });
-    backgroundColor = backgroundColor || "#FFFFFF";
+    backgroundColor = backgroundColor || '#FFFFFF';
     const pixelBufferOp = getImgPixelsBuffer(path, imgData, client, backgroundColor);
-    let metadata = imgData ? await returnAnImageStatFromBuffer(imgData, path)
+    let metadata = imgData
+        ? await returnAnImageStatFromBuffer(imgData, path)
         : _.findWhere(imageStats, { id: path });
     if (!metadata) {
-        return { success: false, msg: JSON.stringify({ warning: `unable to find metadata for ${path}` }) };
+        return {
+            success: false,
+            msg: JSON.stringify({ warning: `unable to find metadata for ${path}` }),
+        };
     }
     let frames; //, info;
     // console.log({ delay: metadata.delay });
     return pixelBufferOp.then((result) => {
         if (result == null) {
-            return { success: false, msg: JSON.stringify({ warning: `unable to get pixel buffer for ${path}` }) };
+            return {
+                success: false,
+                msg: JSON.stringify({ warning: `unable to get pixel buffer for ${path}` }),
+            };
         }
         if (metadata.pages > 1) {
-            frames = _.pluck(result, "data");
+            frames = _.pluck(result, 'data');
             //info = _.pluck(result, "info");
         }
         else {
@@ -113,7 +122,7 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
         console.log({ qpallete_len: qpalette.length });
         let palettes = getPalettes(qpalette, limit);
         let outPixels = qpalette;
-        let outPalette = useHexPalette ? palettes.hex : palettes.rgb.map(c => c.color);
+        let outPalette = useHexPalette ? palettes.hex : palettes.rgb.map((c) => c.color);
         let quantizePalette = false;
         // if (outPalette.length > limit && palettes.colorMap) {
         //      quantizePalette = true;
@@ -150,7 +159,7 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
                     }
                     else {
                         let k = JSON.stringify(rgb);
-                        let idx = palettes.rgb.findIndex(c => c.key === k);
+                        let idx = palettes.rgb.findIndex((c) => c.key === k);
                         if (idx == -1) {
                             idx = 0;
                         }
@@ -166,6 +175,11 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
             return memo;
         }, []);
         console.log(`>> server returns ${path} with ${rows.length} rows over ${frames.length} frames and ${outPalette.length} palette colors`);
+        // apply per-image duration override if set
+        const perImageDuration = imageDurations?.[index];
+        if (perImageDuration != null && perImageDuration > 0) {
+            duration = perImageDuration;
+        }
         // add extra metadata
         duration = duration || 10;
         brightness = brightness || 25;
@@ -173,7 +187,9 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
         // console.log({ collapsed: collapsePixels(rows) });
         let durations = Array.isArray(metadata?.delay) && metadata.delay.length === frames.length
             ? metadata.delay
-            : frames.length == 1 ? [0] : new Array(frames.length).fill(Math.round(1000 / 3));
+            : frames.length == 1
+                ? [0]
+                : new Array(frames.length).fill(Math.round(1000 / 3));
         const output = {
             success: true,
             msg: 'loaded',
@@ -187,11 +203,11 @@ export async function getImageData(client, paletteLength = 512, useHexPalette = 
                     durations,
                     width: client.width,
                     height: client.height,
-                    paletteLength: outPalette.length ? outPalette.length : 0
+                    paletteLength: outPalette.length ? outPalette.length : 0,
                 },
                 palette: outPalette,
-                rows
-            }
+                rows,
+            },
         };
         return output;
     });
@@ -207,7 +223,7 @@ function getPalettes(pixels, limit) {
             //}
         }
         let k = JSON.stringify(p);
-        if (result.rgb.findIndex(r => r.key == k) == -1) {
+        if (result.rgb.findIndex((r) => r.key == k) == -1) {
             // rgb is used for realtime stream, no need to limit palette
             //if (result.rgb.length < limit)
             result.rgb.push({ key: k, color: [p[0], p[1], p[2]] });
@@ -234,12 +250,12 @@ function getColorDistance(rgb1, rgb2) {
     // Use the Pythagorean theorem to calculate distance
     return Math.sqrt(dr * dr + dg * dg + db * db);
 }
-function lin(c) { return linearToByte(srgbToLinear(c)); }
+function lin(c) {
+    return linearToByte(srgbToLinear(c));
+}
 function srgbToLinear(c) {
     c /= 255;
-    return c <= 0.04045
-        ? c / 12.92
-        : Math.pow((c + 0.055) / 1.055, 2.4);
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
 function linearToByte(c) {
     return Math.round(c * 255);
@@ -274,7 +290,7 @@ function collapsePixels(pixelRows) {
         }
     }
     if (paletteStart != -1) {
-        let end = (pixelRows.length * pixelRows[0].pixels.length) - 1;
+        let end = pixelRows.length * pixelRows[0].pixels.length - 1;
         if (end === paletteStart) {
             collapsed.push(-currentPalette);
         }

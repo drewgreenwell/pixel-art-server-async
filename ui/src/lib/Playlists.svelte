@@ -349,6 +349,7 @@
       class="confirm-box"
       role="dialog"
       aria-modal="true"
+      tabindex="0"
       onclick={(e) => e.stopPropagation()}
       onkeydown={() => {}}
     >

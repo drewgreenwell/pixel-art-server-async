@@ -43,7 +43,6 @@
     faXmark,
     faShapes,
     faBolt,
-    faClone,
   } from '@fortawesome/free-solid-svg-icons';
   import {
     faSquare as faSquareReg,
@@ -179,10 +178,7 @@
     paintSquareOutline: false,
     paintCircleSolid: false,
     paintCircleOutline: false,
-    stampTool: false,
   });
-
-
 
   const activeShapeTool:
     | 'squareSolid'
@@ -275,7 +271,6 @@
   let selectionDraftEnd: SelectionPoint | null = $state(null);
   let selectionHoverCell: SelectionPoint | null = $state(null);
   let floatingSelection: FloatingSelection | null = $state(null);
-  let cloneStampPreview: { x: number; y: number; width: number; height: number } | null = $state(null);
 
   function buildSelectionKeys(
     anchor: SelectionPoint,
@@ -489,11 +484,6 @@
   const liftedSelectionPixels: Set<string> = $derived.by(() => {
     if (!floatingSelection) return new Set<string>();
     return new Set<string>(Object.values(floatingSelection.originByCurrent));
-  });
-
-  const floatingSelectionBounds = $derived.by(() => {
-    if (!floatingSelection) return null;
-    return getKeyBounds(floatingSelection.currentKeys);
   });
 
   const selectionActionSuffix = $derived(
@@ -740,54 +730,6 @@
     const mouseEvent = event as MouseEvent | undefined;
     const isToggleSelectionClick =
       !!mouseEvent?.ctrlKey || !!mouseEvent?.metaKey;
-
-    if (tools.stampTool) {
-      // Handle clone stamp tool - immediate paste
-      console.log('Stamp tool active, processing click');
-      if (floatingSelection && activeImage) {
-        //console.log('Has floating selection and active image');
-        //console.log('Selection keys:', floatingSelection.currentKeys);
-        //console.log('Active frame idx:', activeFrameIdx);
-        
-        // Apply the current selection at clicked position - use the original working implementation
-        const selectionKeys = [...floatingSelection.currentKeys];
-        if (selectionKeys.length > 0) {
-          const minX = Math.min(...selectionKeys.map(key => parseInt(key.split(',')[0])));
-          const minY = Math.min(...selectionKeys.map(key => parseInt(key.split(',')[1])));
-          
-          // Apply at clicked position (handle boundaries) - just paste at clicked location
-          for (const key of selectionKeys) {
-            const [pixelX, pixelY] = key.split(',').map(Number);
-            const targetX = x + (pixelX - minX);
-            const targetY = y + (pixelY - minY);
-            
-            // Only apply if within image bounds
-            if (targetX >= 0 && targetX < activeImage.meta.width &&
-                targetY >= 0 && targetY < activeImage.meta.height) {
-              // Get the pixel value from framePixels for current frame
-              const framePixels = floatingSelection.framePixels[activeFrameIdx];
-              if (framePixels && framePixels.hasOwnProperty(key)) {
-                const pixelValue = framePixels[key];
-                if (pixelValue !== null && pixelValue !== undefined) { // Valid pixel
-                  // console.log('Setting pixel at:', targetY, targetX, 'value:', pixelValue);
-                  setPixelColor(targetY, targetX, pixelValue);
-                }
-              }
-            }
-          }
-          
-          imageDirty = true;
-          tools.stampTool = false; // Turn off the tool after use
-          cloneStampPreview = null; // Clear preview when stamp is used
-          console.log('Stamp tool completed, turning off');
-        } else {
-          console.log('No selection keys found');
-        }
-      } else {
-        console.log('No floating selection or active image');
-      }
-      return;
-    }
 
     if (floatingSelection) {
       if (tools.selectMode && isToggleSelectionClick) {
@@ -1960,19 +1902,7 @@
     if (activeImage == null) return;
     if (activePaletteIdx === -1) return;
 
-    if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
-      // Toggle stamp tool
-      tools.stampTool = !tools.stampTool;
-      
-      tools.paintBrush = false;
-      tools.paintBucket = false;
-      tools.selectMode = false;
-      setShapeTool(null);
-      
-      if (!tools.stampTool) {
-        clearSelectionState();
-      }
-    } else if (e.key === 'p') {
+    if (e.key === 'p') {
       tools.paintBrush = !tools.paintBrush;
       tools.paintBucket = false;
       setShapeTool(null);
@@ -2139,7 +2069,6 @@
   <div class="image-main">
     {#if activeImage}
       <div class="image-tools">
-      <div class="selection-shape-btn-container">
         <button
           aria-label="Rectangle Selection"
           onclick={() => {
@@ -2194,13 +2123,11 @@
         >
           <span class="selection-shape-icon circle" aria-hidden="true"></span>
         </button>
-      </div>
-      {#if floatingSelection}
-        <div class="selection-operations-buttons">
+        {#if floatingSelection}
           <button
             aria-label="Confirm Selection Operations"
             onclick={() => confirmSelection()}
-            class="button small tool selection-confirm-btn"
+            class="button small tool"
             disabled={!!activeShapeTool && shapeAnchor !== null}
           >
             <Fa icon={faCheck} />
@@ -2208,13 +2135,12 @@
           <button
             aria-label="Cancel Selection Operations"
             onclick={() => cancelSelection()}
-            class="button small tool selection-cancel-btn"
+            class="button small tool"
             disabled={!!activeShapeTool && shapeAnchor !== null}
           >
             <Fa icon={faXmark} />
           </button>
-        </div>
-      {/if}
+        {/if}
         <button
           aria-label={`Flip Image Horizontally${selectionActionSuffix}`}
           onclick={() => {
@@ -2340,33 +2266,17 @@
           >
             <Fa icon={faArrowRight} />
           </button>
+          <!-- Clone checkbox for moving all -->
+          <div class="clone-checkbox-container" style:display={tools.movingAll ? 'block' : 'none'}>
+            <input
+              type="checkbox"
+              id="clone-checkbox-all"
+              bind:checked={tools.cloneMode}
+              class="clone-checkbox"
+            />
+            <label for="clone-checkbox-all" class="clone-label">Clone</label>
+          </div>
         </div>
-        <button
-          aria-label="Clone Stamp Tool"
-          class="button small tool {tools.stampTool ? 'active' : null}"
-          disabled={activeImage == null || tools.playing}
-        onclick={() => {
-          if (activeImage != null) {
-            tools.stampTool = !tools.stampTool;
-            
-            // Ensure other tools are turned off  
-            tools.paintBrush = false;
-            tools.paintBucket = false;
-            tools.selectMode = false;
-            setShapeTool(null);
-            
-            if (tools.stampTool) {
-              // Use success instead of info to avoid function errors
-              toast.success('Clone stamp active. Click to paste selection.');
-            } else {
-              clearSelectionState();
-              cloneStampPreview = null; // Clear preview when tool is deactivated
-            }
-          }
-        }}
-        >
-          <Fa icon={faClone} />
-        </button>
         <button
           aria-label="Reset palette color to saved"
           class="button small tool"
@@ -2490,15 +2400,6 @@
               {@const isShapePreview = shapePreviewPixels.has(key)}
               {@const isBlockedShapePreview =
                 isShapePreview && floatingSelection && !selectedPixels.has(key)}
-              {@const isCloneStampPreview =
-                cloneStampPreview && 
-                // Check if this pixel is within the bounds of where the preview would be shown
-                // The preview position is relative to the mouse position
-                // We need to determine if pixel (x,y) is within the preview rectangle
-                x >= cloneStampPreview.x && 
-                x < cloneStampPreview.x + cloneStampPreview.width &&
-                y >= cloneStampPreview.y && 
-                y < cloneStampPreview.y + cloneStampPreview.height}
               <button
                 class="pixel{displayPixel != null &&
                 activePaletteIdx == displayPixel
@@ -2507,7 +2408,7 @@
                   ? ' selected'
                   : ''}{isShapePreview
                   ? ' shape-preview'
-                  : ''}{isBlockedShapePreview ? ' shape-preview-blocked' : ''}{isCloneStampPreview ? ' clone-stamp-preview' : ''}"
+                  : ''}{isBlockedShapePreview ? ' shape-preview-blocked' : ''}"
                 onmouseenter={() => {
                   if (
                     tools.selectMode &&
@@ -2519,16 +2420,6 @@
                   }
                   if (activeShapeTool && shapeAnchor && !shapeEnd) {
                     shapeHoverCell = { x, y };
-                  }
-                  if (tools.stampTool && floatingSelection) {
-                    if (floatingSelectionBounds) {
-                      cloneStampPreview = {
-                        x: x,
-                        y: y,
-                        width: floatingSelectionBounds.width,
-                        height: floatingSelectionBounds.height,
-                      };
-                    }
                   }
                 }}
                 onclick={(event) => {
@@ -2717,6 +2608,16 @@
               >
                 <Fa icon={faArrowRight} />
               </button>
+              <!-- Clone checkbox for move mode -->
+              <div class="clone-checkbox-container" style:display={tools.moving ? 'block' : 'none'}>
+                <input
+                  type="checkbox"
+                  id="clone-checkbox"
+                  bind:checked={tools.cloneMode}
+                  class="clone-checkbox"
+                />
+                <label for="clone-checkbox" class="clone-label">Clone</label>
+              </div>
             </div>
           <button
             aria-label={`Flip Frame Horizontally${selectionActionSuffix}`}

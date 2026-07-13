@@ -1,7 +1,7 @@
 import fsextra from 'fs-extra';
 const { writeJSONSync } = fsextra;
-import { Data } from "../utils/data.js";
-import _ from "underscore";
+import { Data } from '../utils/data.js';
+import _ from 'underscore';
 export function replaceImageSet(req, res) {
     console.log('app.post("/imageset"', req.body);
     const imagesetData = {
@@ -10,11 +10,12 @@ export function replaceImageSet(req, res) {
         duration: parseInt('' + req.body.duration),
         brightness: parseInt('' + req.body.brightness),
         images: req.body.images,
-        backgroundColor: req.body.backgroundColor
+        backgroundColor: req.body.backgroundColor,
+        imageDurations: Array.isArray(req.body.imageDurations) ? req.body.imageDurations : undefined,
     };
-    _.pick(req.body, "id", "name", "duration", "brightness", "images");
+    _.pick(req.body, 'id', 'name', 'duration', 'brightness', 'images');
     if (!imagesetData.id) {
-        res.send({ success: false, error: "no client id supplied" });
+        res.send({ success: false, error: 'no client id supplied' });
         return;
     }
     saveImageset(imagesetData, true);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ClientSelector from './lib/ClientSelector.svelte';
   const serverUrl = import.meta.env.VITE_SERVER_URL ?? '';
   import toast, { Toaster } from 'svelte-5-french-toast';
   import Fa from 'svelte-fa';
@@ -13,6 +14,7 @@
   const views = ['images', 'clients', 'playlists'];
   let activeView = $state(views[0]);
   let brightness = $state(128);
+  let selectedClientIds = $state<string[]>([]);
 
   function changeView(i: number) {
     activeView = views[i];
@@ -50,12 +52,16 @@
       });
   }
 
-  function setBrightness(val = 128) {
-    fetch(`${serverUrl}/wled/brightness?brightness=${val}`)
+  function setBrightness(val: number) {
+    const params = new URLSearchParams({ brightness: String(val) });
+    if (selectedClientIds.length > 0) {
+      params.set('targetId', selectedClientIds.join(','));
+    }
+    fetch(`${serverUrl}/wled/brightness?${params.toString()}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.updated) {
-          toast.success('Brightness set');
+          toast.success(selectedClientIds.length > 0 ? `Brightness set for ${selectedClientIds.length} clients` : 'Brightness set');
         } else {
           toast.error('Brightness not set!');
         }
@@ -88,6 +94,8 @@
     >
       <Fa icon={faStop} />
     </button>
+
+    <ClientSelector host={serverUrl} onSelectionChange={(ids) => selectedClientIds = ids} />
 
     <input type="range" min="0" max="255" bind:value={brightness} />
     <button

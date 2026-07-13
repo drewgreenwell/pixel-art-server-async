@@ -1,7 +1,7 @@
-import sharp from "sharp";
-import { Data } from "./data.js";
+import sharp from 'sharp';
+import { Data } from './data.js';
 import fsextra from 'fs-extra';
-import _ from "underscore";
+import _ from 'underscore';
 const { readdirSync, statSync } = fsextra;
 let imageDirectoryCache = [];
 let imageStatsCache = [];
@@ -89,12 +89,12 @@ function getImageStat(imgObj, metadata) {
         format,
         hasAlpha,
         pages: pages ?? 1,
-        delay: delay ?? []
+        delay: delay ?? [],
     };
 }
 function gatherAllImages(basePath) {
     if (!_.isEmpty(imageDirectoryCache)) {
-        console.log({ msg: "returning cached file values", imageDirectoryCache });
+        console.log({ msg: 'returning cached file values', imageDirectoryCache });
         return imageDirectoryCache;
     }
     const recursiveList = (dir, list) => {
