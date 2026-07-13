@@ -159,14 +159,31 @@ export class LedAnimationApp {
             console.log('Animation stopped');
         }
     }
-    setBrightness(brightness, targetIds) {
+    async setBrightness(brightness, targetIds) {
         const targets = targetIds && targetIds.length > 0 ? targetIds : Array.from(this.clients.keys());
+        const updated = [];
+        const failed = [];
+        const operations = [];
         for (const id of targets) {
             const socket = this.clients.get(id);
             if (socket) {
-                socket.setBrightness(brightness);
+                operations.push(socket
+                    .setBrightness(brightness)
+                    .then(() => {
+                    updated.push(id);
+                })
+                    .catch((err) => {
+                    const message = err instanceof Error ? err.message : String(err ?? 'unknown error');
+                    console.error(`Failed to set brightness for client '${id}'`, err);
+                    failed.push({ id, error: message });
+                }));
+            }
+            else {
+                failed.push({ id, error: 'client not connected' });
             }
         }
+        await Promise.all(operations);
+        return { updated, failed };
     }
     loadImage(path) {
         return getImageData(this.config.client, 512, 

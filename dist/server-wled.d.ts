@@ -46,7 +46,13 @@ export declare class LedAnimationApp {
      * Stops the animation loop
      */
     stop(): void;
-    setBrightness(brightness: number, targetIds?: string[]): void;
+    setBrightness(brightness: number, targetIds?: string[]): Promise<{
+        updated: string[];
+        failed: {
+            id: string;
+            error: string;
+        }[];
+    }>;
     loadImage(path: string): Promise<boolean>;
     loadImageData(imgData: PixelImageData): void;
 }

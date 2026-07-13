@@ -181,14 +181,37 @@ export class LedAnimationApp {
     }
   }
 
-  public setBrightness(brightness: number, targetIds?: string[]): void {
+  public async setBrightness(
+    brightness: number,
+    targetIds?: string[],
+  ): Promise<{ updated: string[]; failed: { id: string; error: string }[] }> {
     const targets = targetIds && targetIds.length > 0 ? targetIds : Array.from(this.clients.keys());
+    const updated: string[] = [];
+    const failed: { id: string; error: string }[] = [];
+    const operations: Promise<void>[] = [];
+
     for (const id of targets) {
       const socket = this.clients.get(id);
       if (socket) {
-        socket.setBrightness(brightness);
+        operations.push(
+          socket
+            .setBrightness(brightness)
+            .then(() => {
+              updated.push(id);
+            })
+            .catch((err: unknown) => {
+              const message = err instanceof Error ? err.message : String(err ?? 'unknown error');
+              console.error(`Failed to set brightness for client '${id}'`, err);
+              failed.push({ id, error: message });
+            }),
+        );
+      } else {
+        failed.push({ id, error: 'client not connected' });
       }
     }
+
+    await Promise.all(operations);
+    return { updated, failed };
   }
 
   public loadImage(path: string): Promise<boolean> {

@@ -299,7 +299,7 @@ function stopWledApp() {
     const wledApp = getWledApp(false);
     wledApp?.stop();
 }
-app.get('/wled/brightness', (req, res) => {
+app.get('/wled/brightness', async (req, res) => {
     let bri = clamp(+(req.query.brightness ?? 128), 0, 255);
     let targetIds;
     if (req.query.targetId) {
@@ -313,11 +313,13 @@ app.get('/wled/brightness', (req, res) => {
     }
     const wledApp = getWledApp(false);
     let result = false;
+    let failed = [];
     if (wledApp) {
-        wledApp.setBrightness(bri, targetIds);
+        const brightnessResult = await wledApp.setBrightness(bri, targetIds);
+        failed = brightnessResult.failed;
         result = true;
     }
-    res.send({ updated: result, brightness: bri });
+    res.send({ updated: result, brightness: bri, failed });
 });
 /*
 /wled/start                   // forever
