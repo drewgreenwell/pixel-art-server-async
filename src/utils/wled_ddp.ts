@@ -54,10 +54,7 @@ export class WLEDDdp {
       this._ledCount = hostOrOptions.ledCount ?? 1024;
     }
 
-    this._socket = dgram.createSocket('udp4', (msg, rinfo) => {
-      // console.log({ t: 'socket callback', msg, rinfo })
-      console.log('udp4 callback');
-    });
+    this._socket = dgram.createSocket('udp4');
     this._socket.on('error', (err) => {
       console.log(`Socket error:\n${err?.stack}`, err);
       this._socket.close();
