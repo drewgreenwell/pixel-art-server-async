@@ -30,6 +30,10 @@ export class LedAnimationApp {
      * @param port - The port for DDP communication
      */
     async addClient(client, host, port) {
+        if (this.clients.has(client.id)) {
+            // Replace existing mapping when network target changes for a known client ID.
+            this.clients.delete(client.id);
+        }
         const options = {
             host: host,
             port: port,

@@ -16,10 +16,11 @@ export class WLEDDdp {
   private initiallyOff: boolean = false;
   private frameCount: number = 0;
   private readonly MAX_DATA_LEN: number = 1460;
+  private readonly PACKET_DATA_LEN: number = this.MAX_DATA_LEN - (this.MAX_DATA_LEN % 3);
   private readonly VER1: number = 0x40;
-  private readonly PUSH: number = 0x00;
-  private readonly DATATYPE: number = 0x00;
-  private readonly SOURCE: number = 0x00;
+  private readonly PUSH: number = 0x01;
+  private readonly DATATYPE: number = 0x01;
+  private readonly SOURCE: number = 0x01;
 
   /**
    * The number of LEDs in the strip
@@ -173,11 +174,11 @@ export class WLEDDdp {
     this.frameCount += 1;
     const sequence = (this.frameCount % 15) + 1;
     const byteData = new Uint8Array(pixels);
-    const packets = Math.ceil(byteData.length / this.MAX_DATA_LEN);
+    const packets = Math.ceil(byteData.length / this.PACKET_DATA_LEN);
 
     for (let i = 0; i < packets; i++) {
-      const dataStart = i * this.MAX_DATA_LEN;
-      const dataEnd = dataStart + this.MAX_DATA_LEN;
+      const dataStart = i * this.PACKET_DATA_LEN;
+      const dataEnd = dataStart + this.PACKET_DATA_LEN;
       await this.sendPacket(sequence, i, byteData.slice(dataStart, dataEnd));
     }
   }
@@ -185,11 +186,11 @@ export class WLEDDdp {
   private async sendPacket(sequence: number, packetCount: number, data: Uint8Array): Promise<void> {
     const bytesLength = data.length;
     const header = new Uint8Array(10);
-    header[0] = this.VER1 | (bytesLength === this.MAX_DATA_LEN ? this.VER1 : this.PUSH);
+    header[0] = this.VER1 | (bytesLength === this.PACKET_DATA_LEN ? this.VER1 : this.PUSH);
     header[1] = sequence;
     header[2] = this.DATATYPE;
     header[3] = this.SOURCE;
-    new DataView(header.buffer).setUint32(4, packetCount * this.MAX_DATA_LEN, false); // Big endian
+    new DataView(header.buffer).setUint32(4, packetCount * this.PACKET_DATA_LEN, false); // Big endian
     new DataView(header.buffer).setUint16(8, bytesLength, false); // Big endian
 
     const udpData = new Uint8Array([...header, ...data]);

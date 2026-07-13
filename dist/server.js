@@ -122,62 +122,142 @@ app.get('/imagesets', (req, res) => {
 // app.post("/drew", (req, res) => {
 //   res.send({ d: 'drew', req: JSON.stringify(req.oi) })
 // })
-// sent by client on boot
-app.get('/api/client/checkin', (req, res) => {
-    const { width, height, clent_id, wled_host } = req.query;
-    const h = parseInt('' + height);
-    const w = parseInt('' + width);
-    const pixelCount = w * h;
-    const client = {
-        id: '' + clent_id,
-        pixels: parseInt('' + pixelCount),
-        width: h,
-        height: w,
-    };
-    // only save if new
-    saveClient(client, false);
-    // update config and restart if needed
-    Data.wledConfig.client = client;
+function parsePort(value) {
+    if (value === undefined || value === null || value === '') {
+        return null;
+    }
+    const parsed = Number.parseInt(String(value), 10);
+    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+        return null;
+    }
+    return parsed;
+}
+function parseDimension(value) {
+    const parsed = Number.parseInt(String(value), 10);
+    if (!Number.isInteger(parsed) || parsed < 1) {
+        return null;
+    }
+    return parsed;
+}
+function asOptionalString(value) {
+    if (typeof value !== 'string') {
+        return undefined;
+    }
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+}
+async function registerClientSocket(client) {
     const wledApp = getWledApp(false);
-    if (wledApp) {
-        // If the host is new, we might need to restart or re-init something globally,
-        // but for individual clients joining on different hosts, we just add them.
-        if (wled_host && wled_host !== Data.wledConfig.host) {
-            Data.wledConfig.host = '' + wled_host;
-            if (wledApp.started) {
-                wledApp.stop();
-                _wledApp = null;
-                getWledApp(true)?.start();
-            }
+    if (!wledApp) {
+        return;
+    }
+    await wledApp.addClient(client, client.wledHost, client.wledPort);
+}
+async function registerAllClientSockets(wledApp) {
+    for (const client of Data.clients) {
+        try {
+            await wledApp.addClient(client, client.wledHost, client.wledPort);
         }
-        else {
-            // Add the client to the WLED app instance
-            if (wledApp && wledApp.addClient) {
-                // We need to know what host/port to connect to for this specific client
-                // For now we're using the main config's host but this may be wrong in multi-client scenarios
-                // This may require a separate endpoint for registering new clients with their WLED details
-                wledApp.addClient(client, Data.wledConfig.host, Data.wledConfig.port).catch(err => {
-                    console.error('Failed to add client:', err);
-                });
-            }
-            if (!wledApp.started) {
-                getWledApp(true)?.start();
-            }
+        catch (err) {
+            console.error(`Failed to register client '${client.id}'`, err);
         }
     }
-    console.warn(`client '${clent_id}' checked in OK`);
+}
+// sent by client on boot
+app.get('/api/client/checkin', async (req, res) => {
+    const clientId = asOptionalString(req.query.client_id ?? req.query.clent_id);
+    const width = parseDimension(req.query.width);
+    const height = parseDimension(req.query.height);
+    if (!clientId) {
+        return res.status(400).send({ success: false, error: 'client_id (or clent_id) is required' });
+    }
+    if (!width || !height) {
+        return res.status(400).send({ success: false, error: 'width and height must be positive integers' });
+    }
+    const existingClient = Data.clients.find((c) => c.id === clientId);
+    const checkinHost = asOptionalString(req.query.wled_host ?? req.query.wledHost);
+    const checkinPort = parsePort(req.query.wled_port ?? req.query.wledPort);
+    const resolvedHost = checkinHost ?? existingClient?.wledHost;
+    const resolvedPort = checkinPort ?? existingClient?.wledPort;
+    if (!resolvedHost || !resolvedPort) {
+        return res.status(400).send({ success: false, error: 'wled_host and wled_port are required' });
+    }
+    const client = {
+        id: clientId,
+        name: existingClient?.name,
+        pixels: width * height,
+        width,
+        height,
+        wledHost: resolvedHost,
+        wledPort: resolvedPort,
+        imagesetId: existingClient?.imagesetId,
+    };
+    saveClient(client, true);
+    Data.wledConfig.client = client;
+    try {
+        await registerClientSocket(client);
+        const wledApp = getWledApp(false);
+        if (wledApp && !wledApp.started) {
+            await startWledApp();
+        }
+    }
+    catch (err) {
+        console.error(`Failed to add client '${client.id}'`, err);
+        return res.status(500).send({ success: false, error: 'failed to initialize client socket' });
+    }
+    console.warn(`client '${clientId}' checked in OK`);
     return res.send('ok');
 });
-app.post('/clients', function (req, res) {
-    var clientData = _.pick(req.body, 'id', 'name', 'width', 'height', 'pixels', 'imagesetId');
-    if (!clientData.id) {
-        return res.send({ success: false, error: 'no client id supplied' });
+app.post('/clients', async function (req, res) {
+    const postedClient = _.pick(req.body, 'id', 'name', 'width', 'height', 'pixels', 'imagesetId', 'wledHost', 'wledPort');
+    const id = asOptionalString(postedClient.id);
+    const width = parseDimension(postedClient.width);
+    const height = parseDimension(postedClient.height);
+    const wledHost = asOptionalString(postedClient.wledHost);
+    const wledPort = parsePort(postedClient.wledPort);
+    const imagesetId = postedClient.imagesetId === undefined || postedClient.imagesetId === null || postedClient.imagesetId === ''
+        ? undefined
+        : Number(postedClient.imagesetId);
+    if (!id) {
+        return res.status(400).send({ success: false, error: 'no client id supplied' });
     }
-    clientData.pixels = clientData.width * clientData.height;
+    if (!width || !height) {
+        return res.status(400).send({ success: false, error: 'width and height must be positive integers' });
+    }
+    if (!wledHost) {
+        return res.status(400).send({ success: false, error: 'wledHost is required' });
+    }
+    if (!wledPort) {
+        return res.status(400).send({ success: false, error: 'wledPort must be an integer between 1 and 65535' });
+    }
+    const clientData = {
+        id,
+        name: asOptionalString(postedClient.name),
+        width,
+        height,
+        pixels: width * height,
+        wledHost,
+        wledPort,
+        imagesetId: Number.isInteger(imagesetId) ? imagesetId : undefined,
+    };
     saveClient(clientData, true);
+    try {
+        await registerClientSocket(clientData);
+    }
+    catch (err) {
+        console.error(`Failed to add client '${clientData.id}'`, err);
+        return res.status(500).send({ success: false, error: 'failed to initialize client socket' });
+    }
     return res.send({ success: true });
 });
-app.delete('/clients/:id', deleteClient);
+app.delete('/clients/:id', (req, res) => {
+    const { id } = req.params;
+    const hadClient = Data.clients.some((c) => c.id === id);
+    deleteClient(req, res);
+    if (hadClient) {
+        getWledApp(false)?.removeClient(id);
+    }
+});
 app.post('/imageset', replaceImageSet);
 app.post('/imagesets', function (req, res) {
     saveAllPlaylists(req.body);
@@ -195,9 +275,13 @@ function getWledApp(init = true) {
     _wledApp = _wledApp || (init ? new LedAnimationApp(Data.wledConfig) : null);
     return _wledApp;
 }
-function startWledApp(autoPlay = true) {
+async function startWledApp(autoPlay = true) {
     const wledApp = getWledApp();
-    wledApp?.start(autoPlay);
+    if (!wledApp) {
+        return;
+    }
+    await registerAllClientSockets(wledApp);
+    await wledApp.start(autoPlay);
 }
 function stopWledApp() {
     const wledApp = getWledApp(false);
@@ -205,7 +289,16 @@ function stopWledApp() {
 }
 app.get('/wled/brightness', (req, res) => {
     let bri = clamp(+(req.query.brightness ?? 128), 0, 255);
-    const targetIds = req.query.targetId ? Array.isArray(req.query.targetId) ? req.query.targetId.join(',') : req.query.targetId.split(',') : null;
+    let targetIds;
+    if (req.query.targetId) {
+        // Handle the case where targetId might be a string or array of strings
+        if (Array.isArray(req.query.targetId)) {
+            targetIds = req.query.targetId;
+        }
+        else if (typeof req.query.targetId === 'string') {
+            targetIds = req.query.targetId.split(',');
+        }
+    }
     const wledApp = getWledApp(false);
     let result = false;
     if (wledApp) {
@@ -232,14 +325,14 @@ app.get('/wled/start', async (req, res) => {
         runFor = runForMs;
     }
     if (runFor > 0) {
-        startWledApp();
+        await startWledApp();
         setTimeout(() => {
             stopWledApp();
         }, runFor);
     }
     else {
         runFor = -1;
-        startWledApp();
+        await startWledApp();
     }
     res.send({ started: true, runFor: runFor });
 });
@@ -258,7 +351,7 @@ app.post('/wled/show-image', async (req, res) => {
     if (wledApp) {
         wledApp.loadImageData(imgData);
         result = true;
-        startWledApp(false);
+        await startWledApp(false);
     }
     res.send({ loaded: result });
 });
@@ -270,7 +363,7 @@ app.get('/wled/show-image', async (req, res) => {
     if (wledApp) {
         result = await wledApp.loadImage(path);
         if (result) {
-            startWledApp(false);
+            await startWledApp(false);
         }
     }
     res.send({ loaded: result });

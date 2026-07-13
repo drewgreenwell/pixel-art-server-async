@@ -13,6 +13,7 @@ export declare class WLEDDdp {
     private initiallyOff;
     private frameCount;
     private readonly MAX_DATA_LEN;
+    private readonly PACKET_DATA_LEN;
     private readonly VER1;
     private readonly PUSH;
     private readonly DATATYPE;

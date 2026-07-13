@@ -14,10 +14,11 @@ export class WLEDDdp {
     initiallyOff = false;
     frameCount = 0;
     MAX_DATA_LEN = 1460;
+    PACKET_DATA_LEN = this.MAX_DATA_LEN - (this.MAX_DATA_LEN % 3);
     VER1 = 0x40;
-    PUSH = 0x00;
-    DATATYPE = 0x00;
-    SOURCE = 0x00;
+    PUSH = 0x01;
+    DATATYPE = 0x01;
+    SOURCE = 0x01;
     /**
      * The number of LEDs in the strip
      */
@@ -148,21 +149,21 @@ export class WLEDDdp {
         this.frameCount += 1;
         const sequence = (this.frameCount % 15) + 1;
         const byteData = new Uint8Array(pixels);
-        const packets = Math.ceil(byteData.length / this.MAX_DATA_LEN);
+        const packets = Math.ceil(byteData.length / this.PACKET_DATA_LEN);
         for (let i = 0; i < packets; i++) {
-            const dataStart = i * this.MAX_DATA_LEN;
-            const dataEnd = dataStart + this.MAX_DATA_LEN;
+            const dataStart = i * this.PACKET_DATA_LEN;
+            const dataEnd = dataStart + this.PACKET_DATA_LEN;
             await this.sendPacket(sequence, i, byteData.slice(dataStart, dataEnd));
         }
     }
     async sendPacket(sequence, packetCount, data) {
         const bytesLength = data.length;
         const header = new Uint8Array(10);
-        header[0] = this.VER1 | (bytesLength === this.MAX_DATA_LEN ? this.VER1 : this.PUSH);
+        header[0] = this.VER1 | (bytesLength === this.PACKET_DATA_LEN ? this.VER1 : this.PUSH);
         header[1] = sequence;
         header[2] = this.DATATYPE;
         header[3] = this.SOURCE;
-        new DataView(header.buffer).setUint32(4, packetCount * this.MAX_DATA_LEN, false); // Big endian
+        new DataView(header.buffer).setUint32(4, packetCount * this.PACKET_DATA_LEN, false); // Big endian
         new DataView(header.buffer).setUint16(8, bytesLength, false); // Big endian
         const udpData = new Uint8Array([...header, ...data]);
         const pixels = Array.from(udpData);

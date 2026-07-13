@@ -36,6 +36,10 @@ export class LedAnimationApp {
    * @param port - The port for DDP communication
    */
   public async addClient(client: PixelArtClient, host: string, port: number): Promise<void> {
+    if (this.clients.has(client.id)) {
+      // Replace existing mapping when network target changes for a known client ID.
+      this.clients.delete(client.id);
+    }
     const options: WLEDDdpOptions = {
       host: host,
       port: port,

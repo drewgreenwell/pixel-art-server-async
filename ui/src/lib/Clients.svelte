@@ -12,6 +12,8 @@
     width: number;
     height: number;
     pixels: number;
+    wledHost: string;
+    wledPort: number;
     imagesetId?: number;
   }
 
@@ -31,6 +33,8 @@
   let formName = $state('');
   let formWidth = $state(16);
   let formHeight = $state(16);
+  let formWledHost = $state('');
+  let formWledPort = $state(4048);
   let formImagesetId = $state<number | ''>('');
 
   // confirm delete
@@ -60,6 +64,8 @@
     formName = '';
     formWidth = 16;
     formHeight = 16;
+    formWledHost = '';
+    formWledPort = 4048;
     formImagesetId = '';
     showForm = true;
   }
@@ -70,6 +76,8 @@
     formName = c.name ?? '';
     formWidth = c.width;
     formHeight = c.height;
+    formWledHost = c.wledHost;
+    formWledPort = c.wledPort;
     formImagesetId = c.imagesetId ?? '';
     showForm = true;
   }
@@ -78,6 +86,11 @@
     e.preventDefault();
     if (!formId.trim()) { toast.error('ID is required'); return; }
     if (formWidth < 1 || formHeight < 1) { toast.error('Width and height must be > 0'); return; }
+    if (!formWledHost.trim()) { toast.error('WLED host is required'); return; }
+    if (!Number.isInteger(Number(formWledPort)) || Number(formWledPort) < 1 || Number(formWledPort) > 65535) {
+      toast.error('WLED port must be between 1 and 65535');
+      return;
+    }
 
     const body: Client = {
       id: formId.trim(),
@@ -85,6 +98,8 @@
       width: Number(formWidth),
       height: Number(formHeight),
       pixels: Number(formWidth) * Number(formHeight),
+      wledHost: formWledHost.trim(),
+      wledPort: Number(formWledPort),
       imagesetId: formImagesetId !== '' ? Number(formImagesetId) : undefined,
     };
 
@@ -145,6 +160,8 @@
           <th>Name</th>
           <th>Size</th>
           <th>Pixels</th>
+          <th>Host</th>
+          <th>Port</th>
           <th>Playlist</th>
           <th></th>
         </tr>
@@ -156,6 +173,8 @@
             <td>{c.name ?? '—'}</td>
             <td>{c.width}&times;{c.height}</td>
             <td>{c.pixels}</td>
+            <td class="id-cell">{c.wledHost}</td>
+            <td>{c.wledPort}</td>
             <td>
               {playlists.find((p) => p.id === c.imagesetId)?.name ?? (c.imagesetId != null ? `#${c.imagesetId}` : '—')}
             </td>
@@ -202,6 +221,14 @@
     <div class="form-control inline">
       <label for="c-height">Height</label>
       <input id="c-height" type="number" min="1" max="512" bind:value={formHeight} style="width:5em" />
+    </div>
+    <div class="form-control">
+      <label for="c-host">WLED Host</label>
+      <input id="c-host" type="text" bind:value={formWledHost} placeholder="e.g. 192.168.1.50" required />
+    </div>
+    <div class="form-control inline">
+      <label for="c-port">WLED Port</label>
+      <input id="c-port" type="number" min="1" max="65535" bind:value={formWledPort} style="width:7em" required />
     </div>
     <div class="form-control">
       <label for="c-playlist">Playlist <span class="small">(optional)</span></label>
