@@ -18,32 +18,33 @@ import { LedAnimationApp } from './server-wled.js';
 import dotenv from 'dotenv';
 import { editFile } from './endpoints/edit_file.js';
 import { deleteImage } from './endpoints/delete_image.js';
+import { deleteClient } from './endpoints/delete_client.js';
 // Load environment variables
 dotenv.config();
 const { json, urlencoded } = express;
 const optionDefinitions = [
     {
-        name: "port",
+        name: 'port',
         type: Number,
         multiple: false,
-        typeLabel: "<port number>",
-        description: "server port - defaults to 80",
+        typeLabel: '<port number>',
+        description: 'server port - defaults to 80',
     },
     {
-        name: "env",
-        alias: "e",
+        name: 'env',
+        alias: 'e',
         type: String,
-        description: "environment - dev starts server on dev port (3001)",
+        description: 'environment - dev starts server on dev port (3001)',
     },
-    { name: "help", type: Boolean },
+    { name: 'help', type: Boolean },
 ];
 const sections = [
     {
-        header: "Pixel art server",
-        content: "serves rgb values to multiple LED matrices.",
+        header: 'Pixel art server',
+        content: 'serves rgb values to multiple LED matrices.',
     },
     {
-        header: "Options",
+        header: 'Options',
         optionList: optionDefinitions,
     },
 ];
@@ -66,11 +67,20 @@ const isLocalNetwork = (origin) => {
 const usage = commandLineUsage(sections);
 const options = commandLineArgs(optionDefinitions);
 //if (options.help) return console.log(usage);
-const port = options["port"] ? options.port : options.env == "dev" ? 3001 : 80;
+const port = options['port'] ? options.port : options.env == 'dev' ? 3001 : 80;
 // init the data sources (clients, playlists)
 new Data(import.meta.url);
 console.log({ plpath: Data.playlistFilePath, clientsFilePath: Data.clientsFilePath });
 var app = express();
+// Chrome's Private Network Access policy requires this header on preflight responses
+// when the page origin (e.g. localhost:5173) requests a private IP (e.g. 192.168.x.x).
+// Must be set BEFORE cors() runs, since cors() calls res.end() on OPTIONS preflights.
+app.use((req, res, next) => {
+    if (req.headers['access-control-request-private-network']) {
+        res.setHeader('Access-Control-Allow-Private-Network', 'true');
+    }
+    next();
+});
 const corsOptions = {
     origin: function (origin, callback) {
         if (isLocalNetwork(origin) || !origin) {
@@ -80,10 +90,10 @@ const corsOptions = {
             callback(new Error('Not allowed by CORS for non-local origin'));
         }
     },
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
-app.use("/", express.static("public"));
+app.use('/', express.static('ui-dist'));
 //var bodyParser = require("body-parser");
 app.use(Data.staticImageBaseURL, express.static(Data.imageDirectoryPath));
 // default options
@@ -91,15 +101,15 @@ app.use(fileUpload());
 // Parse URL-encoded bodies (as sent by HTML forms)
 app.use(urlencoded({ extended: true, limit: '40mb' }));
 // Parse JSON bodies (as sent by API clients)
-app.use(json({ type: "application/json", limit: '40mb' }));
+app.use(json({ type: 'application/json', limit: '40mb' }));
 // prime image cache - this returns a Promise
 getAllImageStats();
-app.post("/upload", uploadFile);
-app.post("/edit-file", editFile);
-app.post("/upload-json", uploadJson);
+app.post('/upload', uploadFile);
+app.post('/edit-file', editFile);
+app.post('/upload-json', uploadJson);
 // app.post("/upload-wled", uploadWledJson);
-app.get("/clients", getClients);
-app.get("/imagesets", (req, res) => {
+app.get('/clients', getClients);
+app.get('/imagesets', (req, res) => {
     res.send(Data.playlists);
 });
 // app.get("/drew", (req, res) => {
@@ -113,7 +123,7 @@ app.get("/imagesets", (req, res) => {
 //   res.send({ d: 'drew', req: JSON.stringify(req.oi) })
 // })
 // sent by client on boot
-app.get("/api/client/checkin", (req, res) => {
+app.get('/api/client/checkin', (req, res) => {
     const { width, height, clent_id, wled_host } = req.query;
     const h = parseInt('' + height);
     const w = parseInt('' + width);
@@ -122,43 +132,61 @@ app.get("/api/client/checkin", (req, res) => {
         id: '' + clent_id,
         pixels: parseInt('' + pixelCount),
         width: h,
-        height: w
+        height: w,
     };
-    // only save if new     
+    // only save if new
     saveClient(client, false);
     // update config and restart if needed
     Data.wledConfig.client = client;
-    const host = '' + wled_host;
-    if (host && host != Data.wledConfig.host) {
-        Data.wledConfig.host = '' + wled_host;
-        const wledApp = getWledApp(false);
-        if (wledApp?.started) {
-            wledApp.stop();
-            _wledApp = null;
-            getWledApp(true)?.start();
+    const wledApp = getWledApp(false);
+    if (wledApp) {
+        // If the host is new, we might need to restart or re-init something globally,
+        // but for individual clients joining on different hosts, we just add them.
+        if (wled_host && wled_host !== Data.wledConfig.host) {
+            Data.wledConfig.host = '' + wled_host;
+            if (wledApp.started) {
+                wledApp.stop();
+                _wledApp = null;
+                getWledApp(true)?.start();
+            }
+        }
+        else {
+            // Add the client to the WLED app instance
+            if (wledApp && wledApp.addClient) {
+                // We need to know what host/port to connect to for this specific client
+                // For now we're using the main config's host but this may be wrong in multi-client scenarios
+                // This may require a separate endpoint for registering new clients with their WLED details
+                wledApp.addClient(client, Data.wledConfig.host, Data.wledConfig.port).catch(err => {
+                    console.error('Failed to add client:', err);
+                });
+            }
+            if (!wledApp.started) {
+                getWledApp(true)?.start();
+            }
         }
     }
     console.warn(`client '${clent_id}' checked in OK`);
-    return res.send("ok");
+    return res.send('ok');
 });
-app.post("/clients", function (req, res) {
-    var clientData = _.pick(req.body, "id", "name", "width", "height", "pixels", "imagesetId");
+app.post('/clients', function (req, res) {
+    var clientData = _.pick(req.body, 'id', 'name', 'width', 'height', 'pixels', 'imagesetId');
     if (!clientData.id) {
-        return res.send({ success: false, error: "no client id supplied" });
+        return res.send({ success: false, error: 'no client id supplied' });
     }
     clientData.pixels = clientData.width * clientData.height;
     saveClient(clientData, true);
     return res.send({ success: true });
 });
-app.post("/imageset", replaceImageSet);
-app.post("/imagesets", function (req, res) {
+app.delete('/clients/:id', deleteClient);
+app.post('/imageset', replaceImageSet);
+app.post('/imagesets', function (req, res) {
     saveAllPlaylists(req.body);
     res.send({ success: true });
 });
-app.delete("/delete-image", deleteImage);
-app.delete("/imageset", deletePlaylist);
-app.get("/api/image/pixels", getImage);
-app.get("/images", async (req, res) => {
+app.delete('/delete-image', deleteImage);
+app.delete('/imageset', deletePlaylist);
+app.get('/api/image/pixels', getImage);
+app.get('/images', async (req, res) => {
     res.send(await getAllImageStats());
 });
 /* Add WLED  */
@@ -175,12 +203,13 @@ function stopWledApp() {
     const wledApp = getWledApp(false);
     wledApp?.stop();
 }
-app.get("/wled/brightness", (req, res) => {
+app.get('/wled/brightness', (req, res) => {
     let bri = clamp(+(req.query.brightness ?? 128), 0, 255);
+    const targetIds = req.query.targetId ? Array.isArray(req.query.targetId) ? req.query.targetId.join(',') : req.query.targetId.split(',') : null;
     const wledApp = getWledApp(false);
     let result = false;
     if (wledApp) {
-        wledApp?.setBrightness(bri);
+        wledApp.setBrightness(bri, targetIds);
         result = true;
     }
     res.send({ updated: result, brightness: bri });
@@ -191,7 +220,7 @@ app.get("/wled/brightness", (req, res) => {
 /wled/start?runForSeconds=-1  // forever
 /wled/start?runForMs=5000     // 5 seconds
 */
-app.get("/wled/start", async (req, res) => {
+app.get('/wled/start', async (req, res) => {
     const runForDef = parseInt('' + req.query.runFor);
     const runForSeconds = runForDef || parseInt('' + req.query.runForSeconds);
     const runForMs = parseInt('' + req.query.runForMs);
@@ -214,11 +243,11 @@ app.get("/wled/start", async (req, res) => {
     }
     res.send({ started: true, runFor: runFor });
 });
-app.get("/wled/stop", async (req, res) => {
+app.get('/wled/stop', async (req, res) => {
     stopWledApp();
     res.send({ started: false });
 });
-app.post("/wled/show-image", async (req, res) => {
+app.post('/wled/show-image', async (req, res) => {
     let imgData = req.body;
     let result = false;
     if (!imgData || !imgData.meta || !imgData.rows) {
@@ -233,7 +262,7 @@ app.post("/wled/show-image", async (req, res) => {
     }
     res.send({ loaded: result });
 });
-app.get("/wled/show-image", async (req, res) => {
+app.get('/wled/show-image', async (req, res) => {
     let path = '' + req.query.name;
     let result = false;
     stopWledApp();

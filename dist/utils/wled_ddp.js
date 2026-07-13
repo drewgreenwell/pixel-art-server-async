@@ -8,22 +8,22 @@ export class WLEDDdp {
     _socket;
     _port;
     _host;
-    _ledCount;
     _autoTurnOn;
-    initiallyOff = true;
-    frameCount = 0;
+    _ledCount;
     jsonClient;
-    // DDP Protocol constants
-    MAX_DATA_LEN = 1407; // 1440
-    //
-    VERSION = 0x01; // Version 1, PUSH flag not set, other flags are 0
-    DATA_TYPE = 0x01; // Data type RGB
-    OUTPUT_ID = 0x01; // Default ID for output device
-    //
+    initiallyOff = false;
+    frameCount = 0;
+    MAX_DATA_LEN = 1460;
     VER1 = 0x40;
-    PUSH = 0x01;
-    DATATYPE = 0x01;
-    SOURCE = 0x01;
+    PUSH = 0x00;
+    DATATYPE = 0x00;
+    SOURCE = 0x00;
+    /**
+     * The number of LEDs in the strip
+     */
+    get ledCount() {
+        return this._ledCount;
+    }
     constructor(hostOrOptions, port) {
         if (typeof hostOrOptions === 'string') {
             this._host = hostOrOptions;

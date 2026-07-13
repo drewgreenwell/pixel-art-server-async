@@ -169,7 +169,7 @@ app.get('/api/client/checkin', (req, res) => {
   if (wledApp) {
     // If the host is new, we might need to restart or re-init something globally,
     // but for individual clients joining on different hosts, we just add them.
-    if (host && host !== Data.wledConfig.host) {
+    if (wled_host && wled_host !== Data.wledConfig.host) {
       Data.wledConfig.host = '' + wled_host;
       if (wledApp.started) {
         wledApp.stop();
@@ -177,15 +177,18 @@ app.get('/api/client/checkin', (req, res) => {
         getWledApp(true)?.start();
       }
     } else {
-      // Just add the client to the existing app instance if it's already running
-      // or ensure it's started.
+      // Add the client to the WLED app instance
+      if (wledApp && wledApp.addClient) {
+        // We need to know what host/port to connect to for this specific client
+        // For now we're using the main config's host but this may be wrong in multi-client scenarios
+        // This may require a separate endpoint for registering new clients with their WLED details
+        wledApp.addClient(client, Data.wledConfig.host, Data.wledConfig.port).catch(err => {
+          console.error('Failed to add client:', err);
+        });
+      }
       if (!wledApp.started) {
         getWledApp(true)?.start();
       }
-      // Note: This part is tricky because getWledApp(true) creates a NEW instance
-      // if the old one was null or we just forced it to start.
-      // However, since we are at this point in logic, we should check if we need to
-      // actually call addClient on the correct instance.
     }
   }
 
@@ -252,7 +255,15 @@ function stopWledApp() {
 
 app.get('/wled/brightness', (req, res) => {
   let bri = clamp(+(req.query.brightness ?? 128), 0, 255);
-  const targetIds = req.query.targetId ? req.query.targetId.split(',') : null;
+  let targetIds: string[] | undefined;
+  if (req.query.targetId) {
+    // Handle the case where targetId might be a string or array of strings
+    if (Array.isArray(req.query.targetId)) {
+      targetIds = req.query.targetId as string[];
+    } else if (typeof req.query.targetId === 'string') {
+      targetIds = req.query.targetId.split(',');
+    }
+  }
   const wledApp = getWledApp(false);
   let result = false;
   if (wledApp) {

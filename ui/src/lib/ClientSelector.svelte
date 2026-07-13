@@ -13,35 +13,31 @@
   }
 
   let clients: Client[] = $state([]);
-  let selection: string[] = $state([]);
+  let selectedIds: string[] = $state([]);
   let showMenu = $state(false);
   let isLoading = $state(true);
 
   onMount(async () => {
     try {
-      const res = just_await_fetch_clients(); // No, I'll keep the logic but update variable names to match my new structure.
-    } catch (e) {}
+      const res = await fetch(`${host}/clients`).then(r => r.json());
+      clients = res;
+      isLoading = false;
+    } catch (e) {
+      console.error('Failed to load clients:', e);
+      isLoading = false;
+    }
   });
 
   function toggleSelection(id: string) {
     if (selectedIds.includes(id)) {
       selectedIds = selectedIds.filter(i => i !== id);
     } else {
-      selectedIds_push(); // wait, no, just standard array logic
       selectedIds = [...selectedIds, id];
     }
-  }
-
-  // Actually let's use a simpler toggle since we are using Svelte 5.
-  function toggleSelectionFix(id: string) {
-    if (selectedIds.includes(id)) {
-      selectedIds = selectedIds.filter(i => i !== id);
-    } else {
-      selectedIds = [...selectedIds, id];
+    if (onSelectionChange) {
+      onSelectionChange(selectedIds);
     }
   }
-
-  const countSelected = selectedIds.length;
 
   function toggleMenu() {
     showMenu = !showMenu;
@@ -56,7 +52,7 @@
   >
     <Fa icon={faChevronDown} />
     {#if selectedIds.length > 0}
-      ({selectedIds.length})
+      <span class="badge">{selectedIds.length}</span>
     {/if}
   </button>
 
@@ -67,7 +63,7 @@
           <input
             type="checkbox"
             checked={selectedIds.includes(client.id)}
-            onchange={() => toggleSelectionFix(client.id)}
+            onchange={() => toggleSelection(client.id)}
           />
           {client.name || client.id}
         </label>
@@ -87,12 +83,14 @@
   .select-menu {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5em;
+    position: relative;
   }
 
   .menu {
     position: absolute;
-    bottom: 100%;
+    top: 100%;
     left: 0;
     background: #2a2a2a;
     border: 1px solid #444;
@@ -103,6 +101,25 @@
     z-index: 1000;
     border-radius: 4px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    margin-top: 0.5em;
+    width: 150px;
+    margin-left: 0;
+  }
+
+  .badge {
+    position: absolute;
+    top: -0.5em;
+    right: -0.5em;
+    background: #4d91ff;
+    color: white;
+    border-radius: 50%;
+    width: 1.2em;
+    height: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    font-weight: bold;
   }
 
   .menu label {
@@ -111,6 +128,7 @@
     gap: 0.5em;
     padding: 0.25em 0.5em;
     cursor: pointer;
+    color: #fff;
   }
 
   .menu label:hover {

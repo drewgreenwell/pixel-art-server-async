@@ -1,5 +1,5 @@
-import { PixelArtClient, PixelImageData } from "./data.js";
-import { Led } from "./data_wled.js";
+import { PixelArtClient, PixelImageData } from './data.js';
+import { Led } from './data_wled.js';
 export declare class PixelImagePlayer {
     currentFrame: number;
     currentFrameTime: number;

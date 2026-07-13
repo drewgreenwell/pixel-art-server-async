@@ -1,5 +1,6 @@
-import { WledAppConfig, WLEDDpOptions, Led } from './utils/data_wled.js';
-import { WLEDDp } from './utils/wled_ddp.js';
+import { WledAppConfig, WLEDDdpOptions, Led } from './utils/data_wled.js';
+import { WLEDDdp } from './utils/wled_ddp.js';
+import { PixelArtClient } from './utils/data.js';
 import { ImageDataResponse, PixelImageData } from './utils/data.js';
 import { getImageData } from './utils/get_image_data.js';
 import { PixelImagePlayer } from './utils/pixel_image_player.js';
@@ -8,7 +9,7 @@ import { PixelImagePlayer } from './utils/pixel_image_player.js';
  * Main application class for controlling LED animations
  */
 export class LedAnimationApp {
-  private readonly clients: Map<string, WLEDDp> = new Map();
+  private readonly clients: Map<string, WLEDDdp> = new Map();
   private offset: number = 0;
   private lastPush: Date | null = null;
   private intervalId?: NodeJS.Timeout;
@@ -35,13 +36,13 @@ export class LedAnimationApp {
    * @param port - The port for DDP communication
    */
   public async addClient(client: PixelArtClient, host: string, port: number): Promise<void> {
-    const options: WLEDDpOptions = {
+    const options: WLEDDdpOptions = {
       host: host,
       port: port,
       ledCount: client.pixels,
     };
 
-    const socket = new WLEDDp(options);
+    const socket = new WLEDDdp(options);
     this.clients.set(client.id, socket);
     await socket.initLeds();
   }

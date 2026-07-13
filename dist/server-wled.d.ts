@@ -1,10 +1,11 @@
 import { WledAppConfig } from './utils/data_wled.js';
+import { PixelArtClient } from './utils/data.js';
 import { PixelImageData } from './utils/data.js';
 /**
  * Main application class for controlling LED animations
  */
 export declare class LedAnimationApp {
-    private readonly socket;
+    private readonly clients;
     private offset;
     private lastPush;
     private intervalId?;
@@ -18,6 +19,18 @@ export declare class LedAnimationApp {
      * @param config - Application configuration
      */
     constructor(config: WledAppConfig);
+    /**
+     * Adds a new WLED client and starts tracking its connection
+     * @param client - The pixel art client configuration
+     * @param host - The hostname of the WLED device
+     * @param port - The port for DDP communication
+     */
+    addClient(client: PixelArtClient, host: string, port: number): Promise<void>;
+    /**
+     * Removes a WLED client and its connection
+     * @param clientId - The ID of the client to remove
+     */
+    removeClient(clientId: string): void;
     /**
      * Animation update function called on each interval
      */
@@ -33,7 +46,7 @@ export declare class LedAnimationApp {
      * Stops the animation loop
      */
     stop(): void;
-    setBrightness(brightness: number): void;
+    setBrightness(brightness: number, targetIds?: string[]): void;
     loadImage(path: string): Promise<boolean>;
     loadImageData(imgData: PixelImageData): void;
 }

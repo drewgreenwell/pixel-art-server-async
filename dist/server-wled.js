@@ -5,7 +5,7 @@ import { PixelImagePlayer } from './utils/pixel_image_player.js';
  * Main application class for controlling LED animations
  */
 export class LedAnimationApp {
-    socket;
+    clients = new Map();
     offset = 0;
     lastPush = null;
     intervalId;
@@ -21,24 +21,46 @@ export class LedAnimationApp {
     constructor(config) {
         this.config = config;
         this.pixelPlayer = new PixelImagePlayer(config.client, 10000);
-        // Initialize WLED connection
+        // Note: Individual client sockets are now added via addClient()
+    }
+    /**
+     * Adds a new WLED client and starts tracking its connection
+     * @param client - The pixel art client configuration
+     * @param host - The hostname of the WLED device
+     * @param port - The port for DDP communication
+     */
+    async addClient(client, host, port) {
         const options = {
-            host: config.host,
-            port: config.port,
-            ledCount: config.client.pixels,
+            host: host,
+            port: port,
+            ledCount: client.pixels,
         };
-        // eslint-disable-next-line no-console
-        console.log('Initializing with config:', config);
-        this.socket = new WLEDDdp(options);
+        const socket = new WLEDDdp(options);
+        this.clients.set(client.id, socket);
+        await socket.initLeds();
+    }
+    /**
+     * Removes a WLED client and its connection
+     * @param clientId - The ID of the client to remove
+     */
+    removeClient(clientId) {
+        const socket = this.clients.get(clientId);
+        if (socket) {
+            // We can't easily close the socket from here without adding a close method to WLEDDp,
+            // but removing it from the map stops broadcasting.
+            this.clients.delete(clientId);
+        }
     }
     /**
      * Animation update function called on each interval
      */
     update() {
         let leds = [];
-        // make sure pixel data has changed, no need to waste bandwidth
+        // make sure pixel data has really changed, no need to waste bandwidth
         if (this.lastPush != null && this.lastPush > this.pixelPlayer.lastDraw) {
-            this.socket.sendEmpty();
+            for (const socket of this.clients.values()) {
+                socket.sendEmpty();
+            }
             return;
         }
         if (this.pixelPlayer.image) {
@@ -46,21 +68,27 @@ export class LedAnimationApp {
         }
         else {
             for (let i = 0; i < 1024; i++) {
-                leds.push([this.getRandomInt(0, 256), this.getRandomInt(0, 256), this.getRandomInt(0, 256)]);
+                leds.push([
+                    this.getRandomInt(0, 256),
+                    this.getRandomInt(0, 256),
+                    this.getRandomInt(0, 256),
+                ]);
             }
         }
-        this.socket.send(leds);
+        for (const socket of this.clients.values()) {
+            // Slice the LEDs array to the size required by this specific socket
+            const socketLeds = leds.slice(0, socket.ledCount);
+            socket.send(socketLeds);
+        }
         this.lastPush = new Date();
     }
     // todo: output rgb palette as needed
     hexToRgbLed(hex) {
         var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         // console.log({ hex, result });
-        return result ? [
-            parseInt(result[1], 16),
-            parseInt(result[2], 16),
-            parseInt(result[3], 16)
-        ] : [0, 0, 0];
+        return result
+            ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+            : [0, 0, 0];
     }
     getRandomInt(min, max) {
         const minCeiled = Math.ceil(min);
@@ -68,7 +96,10 @@ export class LedAnimationApp {
         return Math.floor(Math.random() * (max - minCeiled) + minCeiled);
     }
     async loadImageEvery(ms) {
-        const image = await getImageData(this.config.client, 512, /* useHexPalette */ false, /* imgPath */ null, /* imgData */ null);
+        const image = await getImageData(this.config.client, 512, 
+        /* useHexPalette */ false, 
+        /* imgPath */ null, 
+        /* imgData */ null);
         if (image.success && image.data) {
             this.currentImage = image.data;
             this.pixelPlayer.loadImage(image.data, true);
@@ -113,20 +144,28 @@ export class LedAnimationApp {
             console.log('Animation stopped');
         }
     }
-    setBrightness(brightness) {
-        if (!this.socket)
-            return;
-        this.socket.setBrightness(brightness);
+    setBrightness(brightness, targetIds) {
+        const targets = targetIds && targetIds.length > 0 ? targetIds : Array.from(this.clients.keys());
+        for (const id of targets) {
+            const socket = this.clients.get(id);
+            if (socket) {
+                socket.setBrightness(brightness);
+            }
+        }
     }
     loadImage(path) {
-        return getImageData(this.config.client, 512, /* useHexPalette */ false, /* imgPath */ path, /* imgData */ null)
+        return getImageData(this.config.client, 512, 
+        /* useHexPalette */ false, 
+        /* imgPath */ path, 
+        /* imgData */ null)
             .then((image) => {
             if (!image.data)
                 return false;
             this.currentImage = image.data;
             this.pixelPlayer.loadImage(image.data, true);
             return true;
-        }).catch((err) => {
+        })
+            .catch((err) => {
             console.error(err);
             return false;
         });

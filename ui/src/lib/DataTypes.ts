@@ -60,4 +60,5 @@ export interface Tools {
     paintSquareOutline: boolean;
     paintCircleSolid: boolean;
     paintCircleOutline: boolean;
+    stampTool: boolean;
 }

@@ -1,2 +1,2 @@
-import { Request, Response } from "express";
+import { Request, Response } from 'express';
 export declare function replaceImageSet(req: Request, res: Response): void;

@@ -10,6 +10,17 @@ export class WLEDDdp {
   private readonly _socket: dgram.Socket;
   private readonly _port: number;
   private readonly _host: string;
+  private _autoTurnOn: boolean;
+  private _ledCount: number;
+  private jsonClient: WLEDClient;
+  private initiallyOff: boolean = false;
+  private frameCount: number = 0;
+  private readonly MAX_DATA_LEN: number = 1460;
+  private readonly VER1: number = 0x40;
+  private readonly PUSH: number = 0x00;
+  private readonly DATATYPE: number = 0x00;
+  private readonly SOURCE: number = 0x00;
+
   /**
    * The number of LEDs in the strip
    */

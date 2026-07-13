@@ -1,7 +1,7 @@
 import fsextra from 'fs-extra';
 import _ from 'underscore';
 const { writeJSONSync } = fsextra;
-import { Data } from "../utils/data.js";
+import { Data } from '../utils/data.js';
 export function saveClient(clientData, overWriteFlag) {
     const existingClient = _.findWhere(Data.clients, { id: clientData.id });
     let updateToDisk = false;
