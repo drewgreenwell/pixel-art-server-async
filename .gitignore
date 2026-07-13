@@ -6,3 +6,4 @@ img/**
 .history
 data/*.json
 *.code-workspace
+tsconfig.tsbuildinfo

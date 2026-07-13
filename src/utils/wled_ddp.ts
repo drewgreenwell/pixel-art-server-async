@@ -14,6 +14,9 @@ export class WLEDDdp {
   private _ledCount: number;
   private jsonClient: WLEDClient;
   private initiallyOff: boolean = false;
+  private initialized: boolean = false;
+  private initPromise: Promise<void> | null = null;
+  private disposed: boolean = false;
   private frameCount: number = 0;
   private readonly MAX_DATA_LEN: number = 1460;
   private readonly PACKET_DATA_LEN: number = this.MAX_DATA_LEN - (this.MAX_DATA_LEN % 3);
@@ -63,11 +66,6 @@ export class WLEDDdp {
       host: this._host,
       websocket: false,
     });
-
-    this.initLeds().catch((error: Error) => {
-      // eslint-disable-next-line no-console
-      console.error('Error initializing LEDs:', error);
-    });
   }
 
   /**
@@ -75,13 +73,33 @@ export class WLEDDdp {
    * @returns Promise that resolves when initialization is complete
    */
   public async initLeds(): Promise<void> {
-    await this.jsonClient.init();
-    // eslint-disable-next-line no-console
-    console.log('LEDs initialized', this.jsonClient.info, this.jsonClient.state);
-    this.initiallyOff = this.jsonClient.state.on === false;
-    if (this.initiallyOff && this._autoTurnOn) {
-      await this.jsonClient.turnOn();
+    if (this.disposed) {
+      throw new Error('Cannot initialize disposed WLEDDdp socket');
     }
+
+    if (this.initialized) {
+      return;
+    }
+
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    this.initPromise = (async () => {
+      await this.jsonClient.init();
+      // eslint-disable-next-line no-console
+      console.log('LEDs initialized', this.jsonClient.info, this.jsonClient.state);
+      this.initiallyOff = this.jsonClient.state.on === false;
+      if (this.initiallyOff && this._autoTurnOn) {
+        await this.jsonClient.turnOn();
+      }
+      this.initialized = true;
+    })().catch((error: Error) => {
+      this.initPromise = null;
+      throw error;
+    });
+
+    return this.initPromise;
   }
 
   /**
@@ -90,10 +108,30 @@ export class WLEDDdp {
    * @returns Promise that resolves when brightness has been set
    */
   public async setBrightness(brightness: number): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+
     if (brightness < 0 || brightness > 255) {
       throw new Error('Brightness must be between 0 and 255');
     }
     await this.jsonClient.setBrightness(brightness);
+  }
+
+  public dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.disposed = true;
+    this.initPromise = null;
+    this.initialized = false;
+
+    try {
+      this._socket.close();
+    } catch (error) {
+      console.warn('Error closing UDP socket', error);
+    }
   }
 
   /**
@@ -158,10 +196,16 @@ export class WLEDDdp {
    * @returns void
    */
   public async send(data: readonly Led[]): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
     await this.flush(data.flat());
   }
 
   public async sendEmpty(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
     this.frameCount += 1;
     const sequence = (this.frameCount % 15) + 1;
     await this.sendPacket(sequence, 0, new Uint8Array());
@@ -181,6 +225,10 @@ export class WLEDDdp {
   }
 
   private async sendPacket(sequence: number, packetCount: number, data: Uint8Array): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+
     const bytesLength = data.length;
     const header = new Uint8Array(10);
     header[0] = this.VER1 | (bytesLength === this.PACKET_DATA_LEN ? this.VER1 : this.PUSH);
@@ -192,17 +240,23 @@ export class WLEDDdp {
 
     const udpData = new Uint8Array([...header, ...data]);
     const pixels = Array.from(udpData);
-    this._socket.send(
-      udpData,
-      0,
-      pixels.length,
-      this._port,
-      this._host,
-      (error: Error | null, _bytes: number) => {
-        if (error !== null) {
-          console.error('Error sending packet:', error);
-        }
-      },
-    );
+    try {
+      this._socket.send(
+        udpData,
+        0,
+        pixels.length,
+        this._port,
+        this._host,
+        (error: Error | null, _bytes: number) => {
+          if (error !== null) {
+            console.error('Error sending packet:', error);
+          }
+        },
+      );
+    } catch (error) {
+      if (!this.disposed) {
+        console.error('Error sending packet:', error);
+      }
+    }
   }
 }

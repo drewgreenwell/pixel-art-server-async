@@ -176,6 +176,18 @@ function asOptionalString(value: unknown): string | undefined {
   return trimmed.length ? trimmed : undefined;
 }
 
+function getClientSocketRegistrationError(err: unknown): { status: number; error: string } {
+  const message = err instanceof Error ? err.message : String(err ?? '');
+  if (message.includes('do not match canonical canvas')) {
+    return {
+      status: 400,
+      error: `client dimensions mismatch configured canvas: ${message}`,
+    };
+  }
+
+  return { status: 500, error: 'failed to initialize client socket' };
+}
+
 async function registerClientSocket(client: PixelArtClient): Promise<void> {
   const wledApp = getWledApp(false);
   if (!wledApp) {
@@ -239,7 +251,8 @@ app.get('/api/client/checkin', async (req, res) => {
     }
   } catch (err) {
     console.error(`Failed to add client '${client.id}'`, err);
-    return res.status(500).send({ success: false, error: 'failed to initialize client socket' });
+    const registrationError = getClientSocketRegistrationError(err);
+    return res.status(registrationError.status).send({ success: false, error: registrationError.error });
   }
 
   console.warn(`client '${clientId}' checked in OK`);
@@ -300,7 +313,8 @@ app.post('/clients', async function (req, res) {
     await registerClientSocket(clientData);
   } catch (err) {
     console.error(`Failed to add client '${clientData.id}'`, err);
-    return res.status(500).send({ success: false, error: 'failed to initialize client socket' });
+    const registrationError = getClientSocketRegistrationError(err);
+    return res.status(registrationError.status).send({ success: false, error: registrationError.error });
   }
 
   return res.send({ success: true });

@@ -11,6 +11,9 @@ export declare class WLEDDdp {
     private _ledCount;
     private jsonClient;
     private initiallyOff;
+    private initialized;
+    private initPromise;
+    private disposed;
     private frameCount;
     private readonly MAX_DATA_LEN;
     private readonly PACKET_DATA_LEN;
@@ -45,6 +48,7 @@ export declare class WLEDDdp {
      * @returns Promise that resolves when brightness has been set
      */
     setBrightness(brightness: number): Promise<void>;
+    dispose(): void;
     /**
      * Creates an array of LED color values with the specified initial fill
      * @param initialFill Optional initial color for all LEDs, defaults to [0,0,0] (off)

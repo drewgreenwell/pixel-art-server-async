@@ -36,8 +36,18 @@ export class LedAnimationApp {
    * @param port - The port for DDP communication
    */
   public async addClient(client: PixelArtClient, host: string, port: number): Promise<void> {
+    const canvasWidth = this.config.client.width;
+    const canvasHeight = this.config.client.height;
+    if (client.width !== canvasWidth || client.height !== canvasHeight) {
+      throw new Error(
+        `Client '${client.id}' dimensions ${client.width}x${client.height} do not match canonical canvas ${canvasWidth}x${canvasHeight}`,
+      );
+    }
+
     if (this.clients.has(client.id)) {
       // Replace existing mapping when network target changes for a known client ID.
+      const existing = this.clients.get(client.id);
+      existing?.dispose();
       this.clients.delete(client.id);
     }
     const options: WLEDDdpOptions = {
@@ -58,8 +68,7 @@ export class LedAnimationApp {
   public removeClient(clientId: string): void {
     const socket = this.clients.get(clientId);
     if (socket) {
-      // We can't easily close the socket from here without adding a close method to WLEDDp,
-      // but removing it from the map stops broadcasting.
+      socket.dispose();
       this.clients.delete(clientId);
     }
   }
@@ -79,7 +88,11 @@ export class LedAnimationApp {
     if (this.pixelPlayer.image) {
       leds = this.pixelPlayer.currentPixels;
     } else {
-      for (let i = 0; i < 1024; i++) {
+      const maxLedCount = Math.max(
+        this.config.client.pixels,
+        ...Array.from(this.clients.values(), (socket) => socket.ledCount),
+      );
+      for (let i = 0; i < maxLedCount; i++) {
         leds.push([
           this.getRandomInt(0, 256),
           this.getRandomInt(0, 256),
@@ -153,6 +166,10 @@ export class LedAnimationApp {
    */
   public stop(): void {
     this.started = false;
+    for (const [clientId, socket] of this.clients.entries()) {
+      socket.dispose();
+      this.clients.delete(clientId);
+    }
     if (this.intervalId) {
       clearInterval(this.intervalId);
       clearTimeout(this.timeoutId);

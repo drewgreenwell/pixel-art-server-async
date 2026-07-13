@@ -740,9 +740,9 @@
       // Handle clone stamp tool - immediate paste
       console.log('Stamp tool active, processing click');
       if (floatingSelection && activeImage) {
-        console.log('Has floating selection and active image');
-        console.log('Selection keys:', floatingSelection.currentKeys);
-        console.log('Active frame idx:', activeFrameIdx);
+        //console.log('Has floating selection and active image');
+        //console.log('Selection keys:', floatingSelection.currentKeys);
+        //console.log('Active frame idx:', activeFrameIdx);
         
         // Apply the current selection at clicked position - use the original working implementation
         const selectionKeys = [...floatingSelection.currentKeys];
@@ -764,7 +764,7 @@
               if (framePixels && framePixels.hasOwnProperty(key)) {
                 const pixelValue = framePixels[key];
                 if (pixelValue !== null && pixelValue !== undefined) { // Valid pixel
-                  console.log('Setting pixel at:', targetY, targetX, 'value:', pixelValue);
+                  // console.log('Setting pixel at:', targetY, targetX, 'value:', pixelValue);
                   setPixelColor(targetY, targetX, pixelValue);
                 }
               }
