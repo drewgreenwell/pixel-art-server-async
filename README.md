@@ -65,6 +65,18 @@ The timing of these calls (ie the display time per image) is determined by the c
 
 - Prep
   - Images are saved to the ./img folder by default. You can update docker-compose.yaml to point to an existing directory.
+- Configure default WLED host/IP (optional)
+  - The server reads `WLED_HOST` and `WLED_PORT` from environment variables.
+  - Copy `.env.example` to `.env`, then set your target device IP:
+
+    ```bash
+    cp .env.example .env
+    # then edit .env
+    WLED_HOST=192.168.1.50
+    WLED_PORT=4048
+    ```
+
+  - If not set, the default host is `127.0.0.1`.
 - Run
   - `docker compose up -d`
 - Add a client

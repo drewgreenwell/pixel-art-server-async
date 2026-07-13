@@ -53,8 +53,11 @@
   }
 
   function setBrightness(val: number) {
-    const ids = selectedClientIds.length > 0 ? selectedClientIds : null;
-    fetch(`${serverUrl}/wled/brightness?brightness=${val}${ids !== null ? `&targetId=${ids.join(',')}` : ''}`)
+    const params = new URLSearchParams({ brightness: String(val) });
+    if (selectedClientIds.length > 0) {
+      params.set('targetId', selectedClientIds.join(','));
+    }
+    fetch(`${serverUrl}/wled/brightness?${params.toString()}`)
       .then((r) => r.json())
       .then((d) => {
         if (d.updated) {

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import toast, { Toaster } from 'svelte-5-french-toast';
   import Fa from 'svelte-fa';
   import { faChevronDown } from '@fortawesome/free-solid-svg-icons';
 
@@ -69,7 +68,7 @@
         </label>
       {/each}
     </div>
-  {:else if isLoading}
+  {:else if showMenu && isLoading}
     <div class="menu">Loading...</div>
   {/if}
 </div>

@@ -45,3 +45,22 @@ If you have state that's important to retain within a component, consider creati
 import { writable } from 'svelte/store'
 export default writable(0)
 ```
+
+## Pixel Art Server Configuration
+
+This UI talks to the Pixel Art Server using `VITE_SERVER_URL`.
+
+1. Set the UI server URL in `ui/.env` (or your shell):
+
+```bash
+VITE_SERVER_URL=http://localhost:8080
+```
+
+2. Set the server-side default WLED target host/IP in the root `.env`:
+
+```bash
+WLED_HOST=192.168.1.50
+WLED_PORT=4048
+```
+
+If `WLED_HOST` is not set, the server defaults to `127.0.0.1`.

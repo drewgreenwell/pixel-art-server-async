@@ -3,6 +3,18 @@ const { readJSONSync, existsSync } = fsextra;
 import { resolve } from 'path';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
+function getEnvString(name, fallback) {
+    const value = process.env[name];
+    return value && value.trim().length ? value.trim() : fallback;
+}
+function getEnvInt(name, fallback) {
+    const raw = process.env[name];
+    if (!raw || !raw.trim().length) {
+        return fallback;
+    }
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isInteger(parsed) ? parsed : fallback;
+}
 export class Data {
     static staticImageBaseURL = '/image-preview';
     static clients = [];
@@ -22,17 +34,17 @@ export class Data {
     //   updateInterval: getEnvValue('IMAGE_INTERVAL', 10000),
     // };
     static wledConfig = {
-        host: '192.168.1.244',
-        port: 4048,
-        updateInterval: 100,
-        newImageInterval: 10000,
+        host: getEnvString('WLED_HOST', '127.0.0.1'),
+        port: getEnvInt('WLED_PORT', 4048),
+        updateInterval: getEnvInt('UPDATE_INTERVAL', 100),
+        newImageInterval: getEnvInt('IMAGE_INTERVAL', 10000),
         client: {
             id: 'DefaultClient',
             height: 32,
             width: 32,
             pixels: 1024,
-            wledHost: '192.168.1.244',
-            wledPort: 4048,
+            wledHost: getEnvString('WLED_HOST', '127.0.0.1'),
+            wledPort: getEnvInt('WLED_PORT', 4048),
         },
     };
     constructor(baseURL) {

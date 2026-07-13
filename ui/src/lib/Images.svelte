@@ -491,6 +491,11 @@
     return new Set<string>(Object.values(floatingSelection.originByCurrent));
   });
 
+  const floatingSelectionBounds = $derived.by(() => {
+    if (!floatingSelection) return null;
+    return getKeyBounds(floatingSelection.currentKeys);
+  });
+
   const selectionActionSuffix = $derived(
     floatingSelection ? ' on current selection' : '',
   );
@@ -2516,22 +2521,12 @@
                     shapeHoverCell = { x, y };
                   }
                   if (tools.stampTool && floatingSelection) {
-                    // Update clone stamp preview position when mouse moves
-                    const selectionKeys = [...floatingSelection.currentKeys];
-                    if (selectionKeys.length > 0) {
-                      const minX = Math.min(...selectionKeys.map(key => parseInt(key.split(',')[0])));
-                      const minY = Math.min(...selectionKeys.map(key => parseInt(key.split(',')[1])));
-                      const maxX = Math.max(...selectionKeys.map(key => parseInt(key.split(',')[0])));
-                      const maxY = Math.max(...selectionKeys.map(key => parseInt(key.split(',')[1])));
-                      
-                      // Calculate preview position - this shows the selection shape at the mouse position
-                      // We want to show a preview of what would be pasted at the current mouse position
-                      // The preview position should be relative to the mouse position, not the selection's top-left
+                    if (floatingSelectionBounds) {
                       cloneStampPreview = {
                         x: x,
                         y: y,
-                        width: maxX - minX + 1,
-                        height: maxY - minY + 1
+                        width: floatingSelectionBounds.width,
+                        height: floatingSelectionBounds.height,
                       };
                     }
                   }
