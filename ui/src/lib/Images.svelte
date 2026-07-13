@@ -6,14 +6,7 @@
   import paintbrush from '../assets/paintbrush.svg';
   import paintbucket from '../assets/paintbucket.svg';
   import multishape from '../assets/multishape.svg';
-  import type {
-    ImageStat,
-    ImageData,
-    UploadResult,
-    ImageRow,
-    Item,
-    Tools,
-  } from './DataTypes';
+  import type { ImageStat, ImageData, UploadResult, ImageRow, Item, Tools } from './DataTypes';
   import { ConfirmType } from './DataTypes';
   import {
     faUndo,
@@ -182,24 +175,18 @@
     stampTool: false,
   });
 
-
-
-  const activeShapeTool:
-    | 'squareSolid'
-    | 'squareOutline'
-    | 'circleSolid'
-    | 'circleOutline'
-    | null = $derived(
-    tools.paintSquareSolid
-      ? 'squareSolid'
-      : tools.paintSquareOutline
-        ? 'squareOutline'
-        : tools.paintCircleSolid
-          ? 'circleSolid'
-          : tools.paintCircleOutline
-            ? 'circleOutline'
-            : null,
-  );
+  const activeShapeTool: 'squareSolid' | 'squareOutline' | 'circleSolid' | 'circleOutline' | null =
+    $derived(
+      tools.paintSquareSolid
+        ? 'squareSolid'
+        : tools.paintSquareOutline
+          ? 'squareOutline'
+          : tools.paintCircleSolid
+            ? 'circleSolid'
+            : tools.paintCircleOutline
+              ? 'circleOutline'
+              : null,
+    );
 
   let shapeAnchor: { x: number; y: number } | null = $state(null);
   let shapeEnd: { x: number; y: number } | null = $state(null);
@@ -212,12 +199,7 @@
   }
 
   function setShapeTool(
-    tool:
-      | 'squareSolid'
-      | 'squareOutline'
-      | 'circleSolid'
-      | 'circleOutline'
-      | null,
+    tool: 'squareSolid' | 'squareOutline' | 'circleSolid' | 'circleOutline' | null,
   ) {
     tools.paintSquareSolid = tool === 'squareSolid';
     tools.paintSquareOutline = tool === 'squareOutline';
@@ -227,8 +209,7 @@
   }
 
   const shapePreviewPixels: Set<string> = $derived.by(() => {
-    if (!activeShapeTool || !shapeAnchor || !activeImage)
-      return new Set<string>();
+    if (!activeShapeTool || !shapeAnchor || !activeImage) return new Set<string>();
 
     const end = shapeEnd ?? shapeHoverCell ?? shapeAnchor;
 
@@ -240,11 +221,8 @@
     const maxX = Math.max(shapeAnchor.x, end.x);
     const minY = Math.min(shapeAnchor.y, end.y);
     const maxY = Math.max(shapeAnchor.y, end.y);
-    const hollow =
-      activeShapeTool === 'squareOutline' ||
-      activeShapeTool === 'circleOutline';
-    const isCircle =
-      activeShapeTool === 'circleSolid' || activeShapeTool === 'circleOutline';
+    const hollow = activeShapeTool === 'squareOutline' || activeShapeTool === 'circleOutline';
+    const isCircle = activeShapeTool === 'circleSolid' || activeShapeTool === 'circleOutline';
 
     const cells = isCircle
       ? getPixelEllipse(activeImage, minX, maxX, minY, maxY, hollow)
@@ -275,12 +253,10 @@
   let selectionDraftEnd: SelectionPoint | null = $state(null);
   let selectionHoverCell: SelectionPoint | null = $state(null);
   let floatingSelection: FloatingSelection | null = $state(null);
-  let cloneStampPreview: { x: number; y: number; width: number; height: number } | null = $state(null);
+  let cloneStampPreview: { x: number; y: number; width: number; height: number } | null =
+    $state(null);
 
-  function buildSelectionKeys(
-    anchor: SelectionPoint,
-    end: SelectionPoint,
-  ): string[] {
+  function buildSelectionKeys(anchor: SelectionPoint, end: SelectionPoint): string[] {
     if (!activeImage) return [];
     const minX = Math.min(anchor.x, end.x);
     const maxX = Math.max(anchor.x, end.x);
@@ -344,11 +320,7 @@
     const pivotX = (bounds.minX + bounds.maxX) / 2;
     const pivotY = (bounds.minY + bounds.maxY) / 2;
 
-    for (
-      let frameIndex = 0;
-      frameIndex < activeImage.meta.frames;
-      frameIndex++
-    ) {
+    for (let frameIndex = 0; frameIndex < activeImage.meta.frames; frameIndex++) {
       const start = frameIndex * frameHeight;
       const pixels: Record<string, number> = {};
       for (const key of uniqueKeys) {
@@ -394,11 +366,7 @@
     const nextOriginByCurrent = { ...floatingSelection.originByCurrent };
     const nextFramePixels: Record<number, Record<string, number>> = {};
 
-    for (
-      let frameIndex = 0;
-      frameIndex < activeImage.meta.frames;
-      frameIndex++
-    ) {
+    for (let frameIndex = 0; frameIndex < activeImage.meta.frames; frameIndex++) {
       nextFramePixels[frameIndex] = {
         ...(floatingSelection.framePixels[frameIndex] ?? {}),
       };
@@ -407,11 +375,7 @@
     if (nextKeySet.has(key)) {
       nextKeySet.delete(key);
       delete nextOriginByCurrent[key];
-      for (
-        let frameIndex = 0;
-        frameIndex < activeImage.meta.frames;
-        frameIndex++
-      ) {
+      for (let frameIndex = 0; frameIndex < activeImage.meta.frames; frameIndex++) {
         delete nextFramePixels[frameIndex][key];
       }
     } else {
@@ -419,14 +383,9 @@
       nextOriginByCurrent[key] = key;
       const frameHeight = activeImage.meta.height;
       const [px, py] = key.split(',').map(Number);
-      for (
-        let frameIndex = 0;
-        frameIndex < activeImage.meta.frames;
-        frameIndex++
-      ) {
+      for (let frameIndex = 0; frameIndex < activeImage.meta.frames; frameIndex++) {
         const start = frameIndex * frameHeight;
-        nextFramePixels[frameIndex][key] =
-          activeImage.rows[start + py].pixels[px];
+        nextFramePixels[frameIndex][key] = activeImage.rows[start + py].pixels[px];
       }
     }
 
@@ -458,13 +417,9 @@
     if (!selectionDraftAnchor || !activeImage) return new Set<string>();
     if (!selectionDraftEnd) {
       const previewEnd = selectionHoverCell ?? selectionDraftAnchor;
-      return new Set<string>(
-        buildSelectionKeys(selectionDraftAnchor, previewEnd),
-      );
+      return new Set<string>(buildSelectionKeys(selectionDraftAnchor, previewEnd));
     }
-    return new Set<string>(
-      buildSelectionKeys(selectionDraftAnchor, selectionDraftEnd),
-    );
+    return new Set<string>(buildSelectionKeys(selectionDraftAnchor, selectionDraftEnd));
   });
 
   const selectionRegion: {
@@ -496,14 +451,10 @@
     return getKeyBounds(floatingSelection.currentKeys);
   });
 
-  const selectionActionSuffix = $derived(
-    floatingSelection ? ' on current selection' : '',
-  );
+  const selectionActionSuffix = $derived(floatingSelection ? ' on current selection' : '');
 
   const selectionOperationBlockHint = $derived(
-    floatingSelection
-      ? ': confirm or cancel selection operations before proceeding'
-      : '',
+    floatingSelection ? ': confirm or cancel selection operations before proceeding' : '',
   );
   function transformDraggedElement(draggedEl: any, data: any, index: any) {
     draggedEl.style.borderRadius = '50%';
@@ -540,8 +491,7 @@
   function applyDroppedColorToTarget(sourceId: number, targetId: number) {
     if (sourceId === targetId || !activeImage) return;
     if (sourceId < 0 || targetId < 0) return;
-    if (sourceId >= currentPalette.length || targetId >= currentPalette.length)
-      return;
+    if (sourceId >= currentPalette.length || targetId >= currentPalette.length) return;
 
     const sourceColor = currentPalette[sourceId];
     if (!sourceColor) return;
@@ -581,14 +531,10 @@
     if (sourceId === null) return;
     if (sourceId < 0 || sourceId >= stableItems.length) return;
 
-    const destinationIndex = projectedItems.findIndex(
-      (item) => Number(item.id) === draggedId,
-    );
+    const destinationIndex = projectedItems.findIndex((item) => Number(item.id) === draggedId);
 
     const targetId =
-      trackedTargetId !== null &&
-      trackedTargetId >= 0 &&
-      trackedTargetId < stableItems.length
+      trackedTargetId !== null && trackedTargetId >= 0 && trackedTargetId < stableItems.length
         ? trackedTargetId
         : destinationIndex;
 
@@ -610,9 +556,7 @@
     );
   }
 
-  function handlePaletteSort(e: {
-    detail: { items: Item[]; info: { id: string | number } };
-  }) {
+  function handlePaletteSort(e: { detail: { items: Item[]; info: { id: string | number } } }) {
     const draggedId = Number(e.detail.info.id);
     paletteDragSourceId = Number.isFinite(draggedId) ? draggedId : null;
 
@@ -731,15 +675,9 @@
     loadPalette(currentPalette);
   }
 
-  function pixelClick(
-    x: number,
-    y: number,
-    pixel: number | null,
-    event?: Event,
-  ) {
+  function pixelClick(x: number, y: number, pixel: number | null, event?: Event) {
     const mouseEvent = event as MouseEvent | undefined;
-    const isToggleSelectionClick =
-      !!mouseEvent?.ctrlKey || !!mouseEvent?.metaKey;
+    const isToggleSelectionClick = !!mouseEvent?.ctrlKey || !!mouseEvent?.metaKey;
 
     if (tools.stampTool) {
       // Handle clone stamp tool - immediate paste
@@ -748,34 +686,39 @@
         //console.log('Has floating selection and active image');
         //console.log('Selection keys:', floatingSelection.currentKeys);
         //console.log('Active frame idx:', activeFrameIdx);
-        
+
         // Apply the current selection at clicked position - use the original working implementation
         const selectionKeys = [...floatingSelection.currentKeys];
         if (selectionKeys.length > 0) {
-          const minX = Math.min(...selectionKeys.map(key => parseInt(key.split(',')[0])));
-          const minY = Math.min(...selectionKeys.map(key => parseInt(key.split(',')[1])));
-          
+          const minX = Math.min(...selectionKeys.map((key) => parseInt(key.split(',')[0])));
+          const minY = Math.min(...selectionKeys.map((key) => parseInt(key.split(',')[1])));
+
           // Apply at clicked position (handle boundaries) - just paste at clicked location
           for (const key of selectionKeys) {
             const [pixelX, pixelY] = key.split(',').map(Number);
             const targetX = x + (pixelX - minX);
             const targetY = y + (pixelY - minY);
-            
+
             // Only apply if within image bounds
-            if (targetX >= 0 && targetX < activeImage.meta.width &&
-                targetY >= 0 && targetY < activeImage.meta.height) {
+            if (
+              targetX >= 0 &&
+              targetX < activeImage.meta.width &&
+              targetY >= 0 &&
+              targetY < activeImage.meta.height
+            ) {
               // Get the pixel value from framePixels for current frame
               const framePixels = floatingSelection.framePixels[activeFrameIdx];
               if (framePixels && framePixels.hasOwnProperty(key)) {
                 const pixelValue = framePixels[key];
-                if (pixelValue !== null && pixelValue !== undefined) { // Valid pixel
+                if (pixelValue !== null && pixelValue !== undefined) {
+                  // Valid pixel
                   // console.log('Setting pixel at:', targetY, targetX, 'value:', pixelValue);
                   setPixelColor(targetY, targetX, pixelValue);
                 }
               }
             }
           }
-          
+
           imageDirty = true;
           tools.stampTool = false; // Turn off the tool after use
           cloneStampPreview = null; // Clear preview when stamp is used
@@ -798,11 +741,7 @@
         setSelectionPixelColor(x, y, activePaletteIdx);
         return;
       }
-      if (
-        tools.paintBucket &&
-        pixel !== null &&
-        selectedPixels.has(`${x},${y}`)
-      ) {
+      if (tools.paintBucket && pixel !== null && selectedPixels.has(`${x},${y}`)) {
         updatePaletteColorForSelection(pixel, activePaletteIdx);
       }
       if (activeShapeTool) {
@@ -885,6 +824,15 @@
       return;
     }
     image.palette = palette;
+    // Ensure durations is an array of integers (not stringified)
+    if (image.meta && image.meta.durations) {
+      image.meta.durations = image.meta.durations.map((d: any) => {
+        if (typeof d === 'string') {
+          return Number.parseInt(d, 10);
+        }
+        return typeof d === 'number' ? d : 0;
+      });
+    }
     let body = {
       newname: saveName,
       subdir: saveSubdir,
@@ -928,9 +876,7 @@
       });
   }
 
-  function saveInsertedFrames(
-    event: Event & { currentTarget: HTMLButtonElement },
-  ) {
+  function saveInsertedFrames(event: Event & { currentTarget: HTMLButtonElement }) {
     event.preventDefault();
 
     if (!activeImage) {
@@ -1057,10 +1003,7 @@
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
-      if (
-        img.naturalWidth > CROP_THRESHOLD ||
-        img.naturalHeight > CROP_THRESHOLD
-      ) {
+      if (img.naturalWidth > CROP_THRESHOLD || img.naturalHeight > CROP_THRESHOLD) {
         // Large image — show crop modal first
         cropFile = file;
         pendingEditOnly = editOnly;
@@ -1185,9 +1128,7 @@
 
     const image = $state.snapshot(activeImage);
     const frameHeight = image.meta.height;
-    const originsToClear = new Set<string>(
-      Object.values(floatingSelection.originByCurrent),
-    );
+    const originsToClear = new Set<string>(Object.values(floatingSelection.originByCurrent));
 
     for (let frameIndex = 0; frameIndex < image.meta.frames; frameIndex++) {
       const start = frameIndex * frameHeight;
@@ -1266,11 +1207,7 @@
     return moved;
   }
 
-  function translateFloatingSelectionInSingleFrame(
-    dx: number,
-    dy: number,
-    frameIndex: number,
-  ) {
+  function translateFloatingSelectionInSingleFrame(dx: number, dy: number, frameIndex: number) {
     if (!floatingSelection || !activeImage) return false;
 
     const framePixels = floatingSelection.framePixels[frameIndex] ?? {};
@@ -1316,11 +1253,7 @@
       if (frameIndex === -1) {
         translateFloatingSelection(left ? -1 : 1, 0);
       } else {
-        translateFloatingSelectionInSingleFrame(
-          left ? -1 : 1,
-          0,
-          activeFrameIdx,
-        );
+        translateFloatingSelectionInSingleFrame(left ? -1 : 1, 0, activeFrameIdx);
       }
       return;
     }
@@ -1501,18 +1434,14 @@
     });
 
     const nextOriginByCurrent: Record<string, string> = {};
-    for (const [currentKey, originKey] of Object.entries(
-      floatingSelection.originByCurrent,
-    )) {
+    for (const [currentKey, originKey] of Object.entries(floatingSelection.originByCurrent)) {
       const [x, y] = currentKey.split(',').map(Number);
       const next = transformPoint(x, y, bounds);
       nextOriginByCurrent[`${next.x},${next.y}`] = originKey;
     }
 
     const nextFramePixels: Record<number, Record<string, number>> = {};
-    for (const [frameKey, pixels] of Object.entries(
-      floatingSelection.framePixels,
-    )) {
+    for (const [frameKey, pixels] of Object.entries(floatingSelection.framePixels)) {
       const nextPixels: Record<string, number> = {};
       for (const [key, value] of Object.entries(pixels)) {
         const [x, y] = key.split(',').map(Number);
@@ -1572,9 +1501,7 @@
       const width = image.meta.width;
       const start = frame * height;
 
-      const pixels = image.rows
-        .slice(start, start + height)
-        .map((r) => r.pixels);
+      const pixels = image.rows.slice(start, start + height).map((r) => r.pixels);
 
       if (horizontal) {
         flipRegionHorizontal(pixels, offsetX, offsetY, regionSize);
@@ -1664,18 +1591,14 @@
     });
 
     const rotatedOriginByCurrent: Record<string, string> = {};
-    for (const [currentKey, originKey] of Object.entries(
-      floatingSelection.originByCurrent,
-    )) {
+    for (const [currentKey, originKey] of Object.entries(floatingSelection.originByCurrent)) {
       const [x, y] = currentKey.split(',').map(Number);
       const next = rotatePoint(x, y);
       rotatedOriginByCurrent[`${next.x},${next.y}`] = originKey;
     }
 
     const rotatedFramePixels: Record<number, Record<string, number>> = {};
-    for (const [frameKey, pixels] of Object.entries(
-      floatingSelection.framePixels,
-    )) {
+    for (const [frameKey, pixels] of Object.entries(floatingSelection.framePixels)) {
       const nextPixels: Record<string, number> = {};
       for (const [key, value] of Object.entries(pixels)) {
         const [x, y] = key.split(',').map(Number);
@@ -1701,9 +1624,7 @@
 
     const finalKeys = rotatedKeys.map(shiftKey);
     const finalOriginByCurrent: Record<string, string> = {};
-    for (const [currentKey, originKey] of Object.entries(
-      rotatedOriginByCurrent,
-    )) {
+    for (const [currentKey, originKey] of Object.entries(rotatedOriginByCurrent)) {
       finalOriginByCurrent[shiftKey(currentKey)] = originKey;
     }
 
@@ -1771,13 +1692,11 @@
       for (let i = offsetY; i < offsetY + regionSize; i++) {
         for (let j = offsetX; j < offsetX + regionSize; j++) {
           if (clockwise) {
-            rotated[offsetY + (j - offsetX)][
-              offsetX + (regionSize - 1 - (i - offsetY))
-            ] = pixels[i][j];
+            rotated[offsetY + (j - offsetX)][offsetX + (regionSize - 1 - (i - offsetY))] =
+              pixels[i][j];
           } else {
-            rotated[offsetY + (regionSize - 1 - (j - offsetX))][
-              offsetX + (i - offsetY)
-            ] = pixels[i][j];
+            rotated[offsetY + (regionSize - 1 - (j - offsetX))][offsetX + (i - offsetY)] =
+              pixels[i][j];
           }
         }
       }
@@ -1868,10 +1787,7 @@
     }
   }
   function frameHandler() {
-    if (
-      activeImage == null ||
-      activeImage.rows.length < activeFrameIdx * activeImage.meta.height
-    ) {
+    if (activeImage == null || activeImage.rows.length < activeFrameIdx * activeImage.meta.height) {
       return;
     }
     timeout = setTimeout(
@@ -1928,10 +1844,7 @@
     imageDirty = true;
   }
 
-  function updatePaletteColorForSelection(
-    currentIndex: number,
-    newIndex: number,
-  ) {
+  function updatePaletteColorForSelection(currentIndex: number, newIndex: number) {
     if (!floatingSelection) return;
     if (currentIndex === -1 || newIndex === -1) return;
 
@@ -1963,12 +1876,12 @@
     if (e.key === 't' && !e.ctrlKey && !e.metaKey) {
       // Toggle stamp tool
       tools.stampTool = !tools.stampTool;
-      
+
       tools.paintBrush = false;
       tools.paintBucket = false;
       tools.selectMode = false;
       setShapeTool(null);
-      
+
       if (!tools.stampTool) {
         clearSelectionState();
       }
@@ -1987,12 +1900,10 @@
       setShapeTool(anyActive ? null : 'squareSolid');
     } else if (e.key === 'ArrowLeft' && activePaletteIdx > -1) {
       e.preventDefault();
-      activePaletteIdx =
-        activePaletteIdx > 0 ? activePaletteIdx - 1 : currentPalette.length - 1;
+      activePaletteIdx = activePaletteIdx > 0 ? activePaletteIdx - 1 : currentPalette.length - 1;
     } else if (e.key === 'ArrowRight' && activePaletteIdx > -1) {
       e.preventDefault();
-      activePaletteIdx =
-        activePaletteIdx < currentPalette.length - 1 ? activePaletteIdx + 1 : 0;
+      activePaletteIdx = activePaletteIdx < currentPalette.length - 1 ? activePaletteIdx + 1 : 0;
     }
   }}
 />
@@ -2025,9 +1936,7 @@
       <form>
         <h2>Add an image</h2>
         <div class="form-control">
-          <label for="subdir"
-            >Subdirectory <span class="small">(optional)</span></label
-          >
+          <label for="subdir">Subdirectory <span class="small">(optional)</span></label>
           <input
             id="subdir"
             name="subdir"
@@ -2080,13 +1989,8 @@
           <button
             aria-label={`Insert Frame${selectionOperationBlockHint}`}
             class="button"
-            disabled={!activeImage ||
-              !files ||
-              !files.length ||
-              !!floatingSelection ||
-              null}
-            onclick={(event) => uploadImages(event, true, true)}
-            >Insert Frame</button
+            disabled={!activeImage || !files || !files.length || !!floatingSelection || null}
+            onclick={(event) => uploadImages(event, true, true)}>Insert Frame</button
           >
         </div>
       </form>
@@ -2095,14 +1999,8 @@
       <form>
         <h2>Import WLED JSON</h2>
         <div class="form-control">
-          <label for="wledjson" class="small">
-            Import JSON directly from WLED.
-          </label>
-          <textarea
-            id="wledjson"
-            name="wledjson"
-            placeholder="Paste JSON"
-            bind:value={wledjson}
+          <label for="wledjson" class="small"> Import JSON directly from WLED. </label>
+          <textarea id="wledjson" name="wledjson" placeholder="Paste JSON" bind:value={wledjson}
           ></textarea>
         </div>
         <!-- <div class="filedropzone" onclick={() => {fileInput.click()}}>
@@ -2139,82 +2037,72 @@
   <div class="image-main">
     {#if activeImage}
       <div class="image-tools">
-      <div class="selection-shape-btn-container">
-        <button
-          aria-label="Rectangle Selection"
-          onclick={() => {
-            if (
-              tools.selectMode &&
-              tools.selectShape === 'rect' &&
-              !floatingSelection
-            ) {
-              tools.selectMode = false;
-              clearSelectionState();
-              return;
-            }
-            tools.selectShape = 'rect';
-            tools.selectMode = true;
-            shapeAnchor = null;
-            shapeEnd = null;
-            shapeHoverCell = null;
-          }}
-          class="button small tool selection-shape-btn {tools.selectShape ===
-            'rect' &&
-          (tools.selectMode || floatingSelection)
-            ? 'active'
-            : ''}"
-          disabled={!!floatingSelection}
-        >
-          <span class="selection-shape-icon square" aria-hidden="true"></span>
-        </button>
-        <button
-          aria-label="Ellipse Selection"
-          onclick={() => {
-            if (
-              tools.selectMode &&
-              tools.selectShape === 'ellipse' &&
-              !floatingSelection
-            ) {
-              tools.selectMode = false;
-              clearSelectionState();
-              return;
-            }
-            tools.selectShape = 'ellipse';
-            tools.selectMode = true;
-            shapeAnchor = null;
-            shapeEnd = null;
-            shapeHoverCell = null;
-          }}
-          class="button small tool selection-shape-btn {tools.selectShape ===
-            'ellipse' &&
-          (tools.selectMode || floatingSelection)
-            ? 'active'
-            : ''}"
-          disabled={!!floatingSelection}
-        >
-          <span class="selection-shape-icon circle" aria-hidden="true"></span>
-        </button>
-      </div>
-      {#if floatingSelection}
-        <div class="selection-operations-buttons">
+        <div class="selection-shape-btn-container">
           <button
-            aria-label="Confirm Selection Operations"
-            onclick={() => confirmSelection()}
-            class="button small tool selection-confirm-btn"
-            disabled={!!activeShapeTool && shapeAnchor !== null}
+            aria-label="Rectangle Selection"
+            onclick={() => {
+              if (tools.selectMode && tools.selectShape === 'rect' && !floatingSelection) {
+                tools.selectMode = false;
+                clearSelectionState();
+                return;
+              }
+              tools.selectShape = 'rect';
+              tools.selectMode = true;
+              shapeAnchor = null;
+              shapeEnd = null;
+              shapeHoverCell = null;
+            }}
+            class="button small tool selection-shape-btn {tools.selectShape === 'rect' &&
+            (tools.selectMode || floatingSelection)
+              ? 'active'
+              : ''}"
+            disabled={!!floatingSelection}
           >
-            <Fa icon={faCheck} />
+            <span class="selection-shape-icon square" aria-hidden="true"></span>
           </button>
           <button
-            aria-label="Cancel Selection Operations"
-            onclick={() => cancelSelection()}
-            class="button small tool selection-cancel-btn"
-            disabled={!!activeShapeTool && shapeAnchor !== null}
+            aria-label="Ellipse Selection"
+            onclick={() => {
+              if (tools.selectMode && tools.selectShape === 'ellipse' && !floatingSelection) {
+                tools.selectMode = false;
+                clearSelectionState();
+                return;
+              }
+              tools.selectShape = 'ellipse';
+              tools.selectMode = true;
+              shapeAnchor = null;
+              shapeEnd = null;
+              shapeHoverCell = null;
+            }}
+            class="button small tool selection-shape-btn {tools.selectShape === 'ellipse' &&
+            (tools.selectMode || floatingSelection)
+              ? 'active'
+              : ''}"
+            disabled={!!floatingSelection}
           >
-            <Fa icon={faXmark} />
+            <span class="selection-shape-icon circle" aria-hidden="true"></span>
           </button>
         </div>
-      {/if}
+        {#if floatingSelection}
+          <div class="selection-operations-buttons">
+            <button
+              aria-label="Confirm Selection Operations"
+              onclick={() => confirmSelection()}
+              class="button small tool selection-confirm-btn"
+              disabled={!!activeShapeTool && shapeAnchor !== null}
+            >
+              <Fa icon={faCheck} />
+            </button>
+            <button
+              aria-label="Cancel Selection Operations"
+              onclick={() => cancelSelection()}
+              class="button small tool selection-cancel-btn"
+              disabled={!!activeShapeTool && shapeAnchor !== null}
+            >
+              <Fa icon={faXmark} />
+            </button>
+          </div>
+        {/if}
         <button
           aria-label={`Flip Image Horizontally${selectionActionSuffix}`}
           onclick={() => {
@@ -2245,13 +2133,7 @@
           class="button small tool"
         >
           <!-- <Fa icon={faArrowsLeftRight} rotate="-90" /> -->
-          <img
-            class="rotate-90"
-            src={mirrorIcon}
-            alt="mirror"
-            height="20"
-            width="20"
-          />
+          <img class="rotate-90" src={mirrorIcon} alt="mirror" height="20" width="20" />
         </button>
         <button
           aria-label={`Rotate Image Clockwise${selectionActionSuffix}`}
@@ -2345,25 +2227,25 @@
           aria-label="Clone Stamp Tool"
           class="button small tool {tools.stampTool ? 'active' : null}"
           disabled={activeImage == null || tools.playing}
-        onclick={() => {
-          if (activeImage != null) {
-            tools.stampTool = !tools.stampTool;
-            
-            // Ensure other tools are turned off  
-            tools.paintBrush = false;
-            tools.paintBucket = false;
-            tools.selectMode = false;
-            setShapeTool(null);
-            
-            if (tools.stampTool) {
-              // Use success instead of info to avoid function errors
-              toast.success('Clone stamp active. Click to paste selection.');
-            } else {
-              clearSelectionState();
-              cloneStampPreview = null; // Clear preview when tool is deactivated
+          onclick={() => {
+            if (activeImage != null) {
+              tools.stampTool = !tools.stampTool;
+
+              // Ensure other tools are turned off
+              tools.paintBrush = false;
+              tools.paintBucket = false;
+              tools.selectMode = false;
+              setShapeTool(null);
+
+              if (tools.stampTool) {
+                // Use success instead of info to avoid function errors
+                toast.success('Clone stamp active. Click to paste selection.');
+              } else {
+                clearSelectionState();
+                cloneStampPreview = null; // Clear preview when tool is deactivated
+              }
             }
-          }
-        }}
+          }}
         >
           <Fa icon={faClone} />
         </button>
@@ -2372,12 +2254,10 @@
           class="button small tool"
           disabled={activeImage == null ||
             activePaletteIdx == -1 ||
-            currentPalette[activePaletteIdx] ==
-              activeImage.palette[activePaletteIdx]}
+            currentPalette[activePaletteIdx] == activeImage.palette[activePaletteIdx]}
           onclick={() => {
             if (activeImage != null) {
-              currentPalette[activePaletteIdx] =
-                activeImage.palette[activePaletteIdx];
+              currentPalette[activePaletteIdx] = activeImage.palette[activePaletteIdx];
             }
           }}
         >
@@ -2455,13 +2335,9 @@
 
       <!-- svelte-ignore a11y_no_static_element_interactions -->
       <div
-        class="pixel-grid {tools.paintBrush
-          ? 'painting paint-brush'
-          : null} {tools.paintBucket
+        class="pixel-grid {tools.paintBrush ? 'painting paint-brush' : null} {tools.paintBucket
           ? 'painting paint-bucket'
-          : null} {activeShapeTool ? 'painting paint-shape' : null} {showFlash
-          ? ''
-          : 'no-flash'}"
+          : null} {activeShapeTool ? 'painting paint-shape' : null} {showFlash ? '' : 'no-flash'}"
         tabindex="-1"
         role="grid"
         onmouseleave={() => {
@@ -2483,31 +2359,28 @@
               {@const idx = y * activeImage.meta.width + x}
               {@const key = `${x},${y}`}
               {@const previewPixel = floatingSelectionPixels[key]}
-              {@const isLiftedSelectionPixel =
-                floatingSelection && liftedSelectionPixels.has(key)}
-              {@const displayPixel =
-                previewPixel ?? (isLiftedSelectionPixel ? null : pixel)}
+              {@const isLiftedSelectionPixel = floatingSelection && liftedSelectionPixels.has(key)}
+              {@const displayPixel = previewPixel ?? (isLiftedSelectionPixel ? null : pixel)}
               {@const isShapePreview = shapePreviewPixels.has(key)}
               {@const isBlockedShapePreview =
                 isShapePreview && floatingSelection && !selectedPixels.has(key)}
               {@const isCloneStampPreview =
-                cloneStampPreview && 
+                cloneStampPreview &&
                 // Check if this pixel is within the bounds of where the preview would be shown
                 // The preview position is relative to the mouse position
                 // We need to determine if pixel (x,y) is within the preview rectangle
-                x >= cloneStampPreview.x && 
+                x >= cloneStampPreview.x &&
                 x < cloneStampPreview.x + cloneStampPreview.width &&
-                y >= cloneStampPreview.y && 
+                y >= cloneStampPreview.y &&
                 y < cloneStampPreview.y + cloneStampPreview.height}
               <button
-                class="pixel{displayPixel != null &&
-                activePaletteIdx == displayPixel
+                class="pixel{displayPixel != null && activePaletteIdx == displayPixel
                   ? ' active'
-                  : ''}{selectedPixels.has(key)
-                  ? ' selected'
-                  : ''}{isShapePreview
+                  : ''}{selectedPixels.has(key) ? ' selected' : ''}{isShapePreview
                   ? ' shape-preview'
-                  : ''}{isBlockedShapePreview ? ' shape-preview-blocked' : ''}{isCloneStampPreview ? ' clone-stamp-preview' : ''}"
+                  : ''}{isBlockedShapePreview ? ' shape-preview-blocked' : ''}{isCloneStampPreview
+                  ? ' clone-stamp-preview'
+                  : ''}"
                 onmouseenter={() => {
                   if (
                     tools.selectMode &&
@@ -2580,9 +2453,7 @@
             onclick={() => {
               applyDurationToAllFrames();
             }}
-            disabled={tools.playing ||
-              activeImage.meta.frames <= 1 ||
-              !!floatingSelection}
+            disabled={tools.playing || activeImage.meta.frames <= 1 || !!floatingSelection}
             class="button small tool"
           >
             <Fa icon={faCheckDouble} />
@@ -2593,9 +2464,7 @@
             aria-label={tools.playing
               ? `Pause${selectionOperationBlockHint}`
               : `Play${selectionOperationBlockHint}`}
-            disabled={activeImage.meta.frames <= 1 ||
-              tools.moving ||
-              !!floatingSelection}
+            disabled={activeImage.meta.frames <= 1 || tools.moving || !!floatingSelection}
             onclick={() => {
               togglePlay();
             }}
@@ -2614,9 +2483,7 @@
             onclick={() => {
               previousFrame();
             }}
-            disabled={tools.playing ||
-              activeImage.meta.frames <= 1 ||
-              !!floatingSelection}
+            disabled={tools.playing || activeImage.meta.frames <= 1 || !!floatingSelection}
             class="button small tool"><Fa icon={faArrowLeft} /></button
           >
           <button
@@ -2626,9 +2493,7 @@
             onclick={() => {
               nextFrame();
             }}
-            disabled={tools.playing ||
-              activeImage.meta.frames <= 1 ||
-              !!floatingSelection}
+            disabled={tools.playing || activeImage.meta.frames <= 1 || !!floatingSelection}
             class="button small tool"><Fa icon={faArrowRight} /></button
           >
           <button
@@ -2643,9 +2508,7 @@
           </button>
           <button
             aria-label={`Remove Frame${selectionOperationBlockHint}`}
-            disabled={tools.playing ||
-              activeImage.meta.frames <= 1 ||
-              !!floatingSelection}
+            disabled={tools.playing || activeImage.meta.frames <= 1 || !!floatingSelection}
             onclick={() => {
               removeFrameFromCurrentImage();
             }}
@@ -2654,70 +2517,70 @@
             <Fa icon={faMinus} />
           </button>
         </div>
-          <div class="form-control inline frame-tools-row">
-            <div
-              class="move-button-wrap"
-              style="--highlightcolor:{highlightColor}"
-              style:backgroundColor={tools.moving ? 'rgba(0,0,0,0.3)' : null}
+        <div class="form-control inline frame-tools-row">
+          <div
+            class="move-button-wrap"
+            style="--highlightcolor:{highlightColor}"
+            style:backgroundColor={tools.moving ? 'rgba(0,0,0,0.3)' : null}
+          >
+            <button
+              aria-label={`Pan Frame${selectionActionSuffix}`}
+              onclick={() => {
+                tools.moving = !tools.moving;
+                if (tools.moving) {
+                  stopPlaying();
+                }
+              }}
+              class="button small tool toggle {tools.moving ? 'active' : ''}"
+              disabled={tools.playing}
             >
-              <button
-                aria-label={`Pan Frame${selectionActionSuffix}`}
-                onclick={() => {
-                  tools.moving = !tools.moving;
-                  if (tools.moving) {
-                    stopPlaying();
-                  }
-                }}
-                class="button small tool toggle {tools.moving ? 'active' : ''}"
-                disabled={tools.playing}
-              >
-                <Fa icon={faArrowsUpDownLeftRight} />
-              </button>
-              <button
-                aria-label={`Move Up${selectionActionSuffix}`}
-                onclick={() => {
-                  shiftPixelRowsInFrame(true, activeFrameIdx);
-                }}
-                class="button small tool move move-up"
-                style:display={tools.moving ? 'block' : 'none'}
-                disabled={tools.playing}
-              >
-                <Fa icon={faArrowUp} />
-              </button>
-              <button
-                aria-label={`Move Down${selectionActionSuffix}`}
-                onclick={() => {
-                  shiftPixelRowsInFrame(false, activeFrameIdx);
-                }}
-                class="button small tool move move-down"
-                style:display={tools.moving ? 'block' : 'none'}
-                disabled={tools.playing}
-              >
-                <Fa icon={faArrowDown} />
-              </button>
-              <button
-                aria-label={`Move Left${selectionActionSuffix}`}
-                onclick={() => {
-                  shiftPixelsInFrame(true, activeFrameIdx);
-                }}
-                class="button small tool move move-left"
-                style:display={tools.moving ? 'block' : 'none'}
-                disabled={tools.playing}
-              >
-                <Fa icon={faArrowLeft} />
-              </button>
-              <button
-                aria-label={`Move Right${selectionActionSuffix}`}
-                onclick={() => {
-                  shiftPixelsInFrame(false, activeFrameIdx);
-                }}
-                class="button small tool move move-right"
-                style:display={tools.moving ? 'block' : 'none'}
-                disabled={tools.playing}
-              >
-                <Fa icon={faArrowRight} />
-              </button>
-            </div>
+              <Fa icon={faArrowsUpDownLeftRight} />
+            </button>
+            <button
+              aria-label={`Move Up${selectionActionSuffix}`}
+              onclick={() => {
+                shiftPixelRowsInFrame(true, activeFrameIdx);
+              }}
+              class="button small tool move move-up"
+              style:display={tools.moving ? 'block' : 'none'}
+              disabled={tools.playing}
+            >
+              <Fa icon={faArrowUp} />
+            </button>
+            <button
+              aria-label={`Move Down${selectionActionSuffix}`}
+              onclick={() => {
+                shiftPixelRowsInFrame(false, activeFrameIdx);
+              }}
+              class="button small tool move move-down"
+              style:display={tools.moving ? 'block' : 'none'}
+              disabled={tools.playing}
+            >
+              <Fa icon={faArrowDown} />
+            </button>
+            <button
+              aria-label={`Move Left${selectionActionSuffix}`}
+              onclick={() => {
+                shiftPixelsInFrame(true, activeFrameIdx);
+              }}
+              class="button small tool move move-left"
+              style:display={tools.moving ? 'block' : 'none'}
+              disabled={tools.playing}
+            >
+              <Fa icon={faArrowLeft} />
+            </button>
+            <button
+              aria-label={`Move Right${selectionActionSuffix}`}
+              onclick={() => {
+                shiftPixelsInFrame(false, activeFrameIdx);
+              }}
+              class="button small tool move move-right"
+              style:display={tools.moving ? 'block' : 'none'}
+              disabled={tools.playing}
+            >
+              <Fa icon={faArrowRight} />
+            </button>
+          </div>
           <button
             aria-label={`Flip Frame Horizontally${selectionActionSuffix}`}
             onclick={() => {
@@ -2750,13 +2613,7 @@
             disabled={tools.playing}
           >
             <!-- <Fa icon={faArrowsLeftRight} rotate="-90" /> -->
-            <img
-              class="rotate-90"
-              src={mirrorIcon}
-              alt="mirror"
-              height="20"
-              width="20"
-            />
+            <img class="rotate-90" src={mirrorIcon} alt="mirror" height="20" width="20" />
           </button>
           <button
             aria-label={`Rotate Frame Clockwise${selectionActionSuffix}`}
@@ -2807,16 +2664,12 @@
           <input id="highlightcolor" type="color" bind:value={highlightColor} />
         </div>
         <div
-          class="form-control inline shape-controls-row {activeShapeTool
-            ? 'shape-tools-open'
-            : ''}"
+          class="form-control inline shape-controls-row {activeShapeTool ? 'shape-tools-open' : ''}"
         >
           <button
             aria-label="Paint Brush (P)"
             class="button small tool {tools.paintBrush ? 'active' : null}"
-            disabled={activeImage == null ||
-              activePaletteIdx == -1 ||
-              tools.playing}
+            disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
             onclick={() => {
               if (activeImage != null) {
                 tools.paintBrush = !tools.paintBrush;
@@ -2830,9 +2683,7 @@
           <button
             aria-label={`Paint Bucket (B)${selectionActionSuffix}`}
             class="button small tool {tools.paintBucket ? 'active' : null}"
-            disabled={activeImage == null ||
-              activePaletteIdx == -1 ||
-              tools.playing}
+            disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
             onclick={() => {
               if (activeImage != null) {
                 tools.paintBucket = !tools.paintBucket;
@@ -2851,9 +2702,7 @@
               type="button"
               aria-label="Shape Tools (S)"
               class="button small tool toggle {activeShapeTool ? 'active' : ''}"
-              disabled={activeImage == null ||
-                activePaletteIdx == -1 ||
-                tools.playing}
+              disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
               onclick={() => {
                 const anyActive = !!activeShapeTool;
                 tools.paintBrush = false;
@@ -2866,16 +2715,11 @@
             <button
               type="button"
               aria-label="Paint Square Solid"
-              class="button small tool shape-btn shape-up {activeShapeTool ===
-              'squareSolid'
+              class="button small tool shape-btn shape-up {activeShapeTool === 'squareSolid'
                 ? 'active'
                 : null}"
-              style:display={activeShapeTool && shapeAnchor === null
-                ? 'block'
-                : 'none'}
-              disabled={activeImage == null ||
-                activePaletteIdx == -1 ||
-                tools.playing}
+              style:display={activeShapeTool && shapeAnchor === null ? 'block' : 'none'}
+              disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
               onclick={() => {
                 tools.paintBrush = false;
                 tools.paintBucket = false;
@@ -2887,16 +2731,11 @@
             <button
               type="button"
               aria-label="Paint Square Outline"
-              class="button small tool shape-btn shape-left {activeShapeTool ===
-              'squareOutline'
+              class="button small tool shape-btn shape-left {activeShapeTool === 'squareOutline'
                 ? 'active'
                 : null}"
-              style:display={activeShapeTool && shapeAnchor === null
-                ? 'block'
-                : 'none'}
-              disabled={activeImage == null ||
-                activePaletteIdx == -1 ||
-                tools.playing}
+              style:display={activeShapeTool && shapeAnchor === null ? 'block' : 'none'}
+              disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
               onclick={() => {
                 tools.paintBrush = false;
                 tools.paintBucket = false;
@@ -2908,16 +2747,11 @@
             <button
               type="button"
               aria-label="Paint Circle Solid"
-              class="button small tool shape-btn shape-right {activeShapeTool ===
-              'circleSolid'
+              class="button small tool shape-btn shape-right {activeShapeTool === 'circleSolid'
                 ? 'active'
                 : null}"
-              style:display={activeShapeTool && shapeAnchor === null
-                ? 'block'
-                : 'none'}
-              disabled={activeImage == null ||
-                activePaletteIdx == -1 ||
-                tools.playing}
+              style:display={activeShapeTool && shapeAnchor === null ? 'block' : 'none'}
+              disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
               onclick={() => {
                 tools.paintBrush = false;
                 tools.paintBucket = false;
@@ -2929,16 +2763,11 @@
             <button
               type="button"
               aria-label="Paint Circle Outline"
-              class="button small tool shape-btn shape-down {activeShapeTool ===
-              'circleOutline'
+              class="button small tool shape-btn shape-down {activeShapeTool === 'circleOutline'
                 ? 'active'
                 : null}"
-              style:display={activeShapeTool && shapeAnchor === null
-                ? 'block'
-                : 'none'}
-              disabled={activeImage == null ||
-                activePaletteIdx == -1 ||
-                tools.playing}
+              style:display={activeShapeTool && shapeAnchor === null ? 'block' : 'none'}
+              disabled={activeImage == null || activePaletteIdx == -1 || tools.playing}
               onclick={() => {
                 tools.paintBrush = false;
                 tools.paintBucket = false;
@@ -2980,12 +2809,10 @@
             class="button small tool"
             disabled={activeImage == null ||
               activePaletteIdx == -1 ||
-              currentPalette[activePaletteIdx] ==
-                activeImage.palette[activePaletteIdx]}
+              currentPalette[activePaletteIdx] == activeImage.palette[activePaletteIdx]}
             onclick={() => {
               if (activeImage != null) {
-                currentPalette[activePaletteIdx] =
-                  activeImage.palette[activePaletteIdx];
+                currentPalette[activePaletteIdx] = activeImage.palette[activePaletteIdx];
               }
             }}
           >
@@ -3077,12 +2904,7 @@
   <form>
     <div class="form-control">
       <label for="savesubdir">Subdirectory (optional)</label>
-      <input
-        type="text"
-        id="savesubdir"
-        name="savesubdir"
-        bind:value={saveSubdir}
-      />
+      <input type="text" id="savesubdir" name="savesubdir" bind:value={saveSubdir} />
     </div>
     <div class="form-control">
       <label for="savesubdir">Image Name</label>
@@ -3102,9 +2924,7 @@
         }}
         class="button">Cancel</button
       >
-      <button onclick={(e) => upLoadJson(e)} class="button active"
-        >Save Changes</button
-      >
+      <button onclick={(e) => upLoadJson(e)} class="button active">Save Changes</button>
     </div>
   </form>
 </Modal>
@@ -3152,19 +2972,13 @@
           }}
           class="button">Cancel</button
         >
-        <button onclick={(e) => saveInsertedFrames(e)} class="button active"
-          >Save Changes</button
-        >
+        <button onclick={(e) => saveInsertedFrames(e)} class="button active">Save Changes</button>
       </div>
     </div>
   </form>
 </Modal>
 <MouseCursor
-  iconSrc={activeShapeTool
-    ? multishape
-    : tools.paintBucket
-      ? paintbucket
-      : paintbrush}
+  iconSrc={activeShapeTool ? multishape : tools.paintBucket ? paintbucket : paintbrush}
   containerSelector=".pixel-grid"
   showCursor={tools.paintBrush || tools.paintBucket || !!activeShapeTool}
 />
@@ -3173,8 +2987,7 @@
   bind:showModal={showCropModal}
   bind:file={cropFile}
   oncrop={(blob, crop) => {
-    if (cropFile)
-      doUpload(blob, cropFile.name, pendingEditOnly, pendingFrameInsert, crop);
+    if (cropFile) doUpload(blob, cropFile.name, pendingEditOnly, pendingFrameInsert, crop);
   }}
   oncancel={() => {
     cropFile = null;

@@ -40,7 +40,18 @@ export async function uploadJson(req: Request, res: Response) {
   const channels = 4; // RGBA for transparency support
   const background = { r: 0, g: 0, b: 0, alpha: 1 }; // black background
   const animated = frames > 1;
-  const delays = data.meta.durations;
+  // Ensure delays are integers (not strings or other types)
+  let delays = data.meta.durations;
+  if (Array.isArray(delays)) {
+    delays = delays.map((d: any) => {
+      if (typeof d === 'string') {
+        return Number.parseInt(d, 10);
+      }
+      return typeof d === 'number' ? Math.floor(d) : 0;
+    });
+  } else {
+    delays = [];
+  }
   // if (animated) {
   //   for (let i = 0; i < frames; i++) {
   //     delays.push(+data.rows[i * height].duration);
@@ -123,9 +134,9 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   // console.log({ hex, result })
   return result
     ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
+      r: parseInt(result[1], 16),
+      g: parseInt(result[2], 16),
+      b: parseInt(result[3], 16),
+    }
     : { r: 0, g: 0, b: 0 };
 }
